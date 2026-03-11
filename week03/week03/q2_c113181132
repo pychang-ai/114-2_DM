@@ -1,0 +1,72 @@
+姓名：吳宗翰
+學號：c113181132
+
+=== 原始資料與遺漏值統計 ===
+（貼上原始資料的 print 結果和遺漏值統計）
+原始資料：
+```
+   water_temp  salinity  wave_height  wind_speed
+0        26.5      34.2          1.2        15.3
+1        27.3       NaN          2.5        22.1
+2         NaN      33.8          1.8        18.5
+3        28.1      34.5          NaN        20.0
+4        26.9      33.9          3.1         NaN
+5         NaN      34.1          2.0        16.8
+6        25.8       NaN          1.5        19.2
+7        27.6      34.3          NaN        21.5
+8        29.0      33.7          2.8         NaN
+9        26.2      34.0          1.9        17.4
+```
+
+資料形狀：(10, 4)
+
+各欄位遺漏值數量：
+```
+water_temp     2
+salinity       2
+wave_height    2
+wind_speed     2
+dtype: int64
+```
+
+
+=== 完整程式碼 ===
+（貼上你撰寫的完整 Python 程式碼）
+from sklearn.preprocessing import StandardScaler
+
+# 初始化 StandardScaler
+scaler = StandardScaler()
+
+# 對填補後的資料進行標準化
+df_scaled = scaler.fit_transform(df_filled)
+
+# 將標準化後的資料轉換回 DataFrame
+df_final = pd.DataFrame(df_scaled, columns=df_filled.columns)
+
+print("標準化後的資料：")
+display(df_final)
+
+# 驗證標準化結果（平均值應接近 0，標準差應接近 1）
+print(f"\n標準化後各欄位平均值：\n{df_final.mean()}")
+print(f"\n標準化後各欄位標準差：\n{df_final.std()}")
+
+
+=== Pipeline 處理後的資料 ===
+（貼上 Pipeline 轉換後的 DataFrame）
+	water_temp	salinity	wave_height	wind_speed
+0	-0.766501	0.615689	-1.654233	-1.819676
+1	0.141945	0.000000	0.735215	1.665900
+2	0.000000	-1.175406	-0.551411	-0.179405
+3	1.050391	1.959010	0.000000	0.589472
+4	-0.312278	-0.727632	1.838037	0.000000
+5	0.000000	0.167915	-0.183804	-1.050799
+6	-1.561391	0.000000	-1.102822	0.179405
+7	0.482612	1.063462	0.000000	1.358349
+8	2.072392	-1.623180	1.286626	0.000000
+9	-1.107168	-0.279859	-0.367607	-0.743248
+
+
+=== 標準化驗證 ===
+（貼上每個欄位的平均值和標準差，確認平均值接近 0、標準差接近 1）
+si.statistics_
+array([27.175 , 34.0625,  2.1   , 18.85  ])
