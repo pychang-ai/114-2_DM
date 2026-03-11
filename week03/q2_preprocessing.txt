@@ -1,0 +1,60 @@
+姓名：曾聖皓 
+學號：C113181119
+
+=== 原始資料與遺漏值統計 ===
+（貼上原始資料的 print 結果和遺漏值統計）
+df.info()
+
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 10 entries, 0 to 9
+Data columns (total 4 columns):
+ #   Column       Non-Null Count  Dtype  
+---  ------       --------------  -----  
+ 0   water_temp   8 non-null      float64
+ 1   salinity     8 non-null      float64
+ 2   wave_height  8 non-null      float64
+ 3   wind_speed   8 non-null      float64
+dtypes: float64(4)
+memory usage: 452.0 bytes
+
+=== 完整程式碼 ===
+（貼上你撰寫的完整 Python 程式碼）
+X = df
+X_col_num = ['water_temp','salinity','wave_height','wind_speed']
+X_num = X[X_col_num]
+X_num.style.highlight_null(color='yellow')
+
+
+ 	water_temp	salinity	wave_height	wind_speed
+0	26.500000	 34.200000	 1.200000  	15.300000
+1	27.300000	    nan	     2.500000	  22.100000
+2	   nan	   33.800000	 1.800000	  18.500000
+3	28.100000	 34.500000	  nan     	20.000000
+4	26.900000  33.900000	 3.100000	     nan
+5	   nan	   34.100000   2.000000	  16.800000
+6	25.800000     nan	     1.500000  	19.200000
+7	27.600000	 34.300000    	nan	    21.500000
+8	29.000000	 33.700000	 2.800000	     nan
+9	26.200000	 34.000000	 1.900000	  17.400000
+ 
+=== Pipeline 處理後的資料 ===
+（貼上 Pipeline 轉換後的 DataFrame）
+from sklearn.impute import SimpleImputer
+si = SimpleImputer(strategy='mean')
+X_num_impute = si.fit_transform(X_num)
+X_num_impute
+
+array([[26.5   , 34.2   ,  1.2   , 15.3   ],
+       [27.3   , 34.0625,  2.5   , 22.1   ],
+       [27.175 , 33.8   ,  1.8   , 18.5   ],
+       [28.1   , 34.5   ,  2.1   , 20.    ],
+       [26.9   , 33.9   ,  3.1   , 18.85  ],
+       [27.175 , 34.1   ,  2.    , 16.8   ],
+       [25.8   , 34.0625,  1.5   , 19.2   ],
+       [27.6   , 34.3   ,  2.1   , 21.5   ],
+       [29.    , 33.7   ,  2.8   , 18.85  ],
+       [26.2   , 34.    ,  1.9   , 17.4   ]])
+=== 標準化驗證 ===
+（貼上每個欄位的平均值和標準差，確認平均值接近 0、標準差接近 1）
+si.statistics_
+array([27.175 , 34.0625,  2.1   , 18.85  ])
