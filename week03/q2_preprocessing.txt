@@ -2,13 +2,52 @@
 學號：C113181114
 
 === 原始資料與遺漏值統計 ===
-（貼上原始資料的 print 結果和遺漏值統計）
+import pandas as pd
+import numpy as np
+
+# 建立含遺漏值的海洋觀測資料
+data = {
+    'water_temp': [26.5, 27.3, np.nan, 28.1, 26.9, np.nan, 25.8, 27.6, 29.0, 26.2],
+    'salinity': [34.2, np.nan, 33.8, 34.5, 33.9, 34.1, np.nan, 34.3, 33.7, 34.0],
+    'wave_height': [1.2, 2.5, 1.8, np.nan, 3.1, 2.0, 1.5, np.nan, 2.8, 1.9],
+    'wind_speed': [15.3, 22.1, 18.5, 20.0, np.nan, 16.8, 19.2, 21.5, np.nan, 17.4]
+}
+df = pd.DataFrame(data)
+print("原始資料：")
+print(df)
+print(f"\n資料形狀：{df.shape}")
+print(f"\n各欄位遺漏值數量：\n{df.isnull().sum()}")
 
 === 完整程式碼 ===
-（貼上你撰寫的完整 Python 程式碼）
+import pandas as pd
+import numpy as np
+
+# 建立含遺漏值的海洋觀測資料
+data = {
+    'water_temp': [26.5, 27.3, np.nan, 28.1, 26.9, np.nan, 25.8, 27.6, 29.0, 26.2],
+    'salinity': [34.2, np.nan, 33.8, 34.5, 33.9, 34.1, np.nan, 34.3, 33.7, 34.0],
+    'wave_height': [1.2, 2.5, 1.8, np.nan, 3.1, 2.0, 1.5, np.nan, 2.8, 1.9],
+    'wind_speed': [15.3, 22.1, 18.5, 20.0, np.nan, 16.8, 19.2, 21.5, np.nan, 17.4]
+}
+df = pd.DataFrame(data)
+print("原始資料：")
+print(df)
+print(f"\n資料形狀：{df.shape}")
+print(f"\n各欄位遺漏值數量：\n{df.isnull().sum()}")
 
 === Pipeline 處理後的資料 ===
-（貼上 Pipeline 轉換後的 DataFrame）
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+
+# 建立 Pipeline
+num_pipeline = Pipeline([
+    ('imputer', SimpleImputer(strategy='mean')),
+    ('scaler', StandardScaler())
+])
+
+# 轉換資料
+result = num_pipeline.fit_transform(df)
 
 === 標準化驗證 ===
 （貼上每個欄位的平均值和標準差，確認平均值接近 0、標準差接近 1）
