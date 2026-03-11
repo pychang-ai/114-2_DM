@@ -3,6 +3,18 @@
 
 === 原始資料與遺漏值統計 ===
 （貼上原始資料的 print 結果和遺漏值統計）
+df.info()
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 10 entries, 0 to 9
+Data columns (total 4 columns):
+ #   Column       Non-Null Count  Dtype  
+---  ------       --------------  -----  
+ 0   water_temp   8 non-null      float64
+ 1   salinity     8 non-null      float64
+ 2   wave_height  8 non-null      float64
+ 3   wind_speed   8 non-null      float64
+dtypes: float64(4)
+memory usage: 452.0 bytes
 
 === 完整程式碼 ===
 （貼上你撰寫的完整 Python 程式碼）
