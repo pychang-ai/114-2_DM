@@ -18,7 +18,11 @@ memory usage: 452.0 bytes
 
 === 完整程式碼 ===
 （貼上你撰寫的完整 Python 程式碼）
-
+from sklearn.pipeline import make_pipeline
+num_pl = make_pipeline(SimpleImputer(strategy=&#39;mean&#39;),
+                       StandardScaler())
+num_pl.fit_transform(X_num)
+si.statistics_
 === Pipeline 處理後的資料 ===
 （貼上 Pipeline 轉換後的 DataFrame）
 
