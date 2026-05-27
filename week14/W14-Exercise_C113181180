@@ -1,0 +1,38 @@
+# W14-Exercise
+
+##Error01
+這個錯誤（ValueError: could not convert string to float）是因為 df.corr() 在計算相關係數時，預設會嘗試處理所有欄位。由於您的資料中包含 'sales' 和 'salary' 這兩個字串（類別型）欄位，程式無法將它們轉換為浮點數進行運算，因此產生錯誤。
+我已經將程式碼修改為 df.select_dtypes(include=np.number).corr()，這樣會先篩選出數值型欄位後再計算相關係數，問題就解決了。目前熱圖（Heatmap）已經可以正常顯示。
+sns.heatmap(df.select_dtypes(include=np.number).corr().round(2), annot=True, cmap='coolwarm');
+
+##Error02
+這個錯誤 ValueError: could not convert string to float: 'sales' 的原因是因為 corrwith 在計算相關係數時，預設會檢查所有欄位。由於資料中包含 'sales' 和 'salary' 等文字（字串）欄位，系統無法將它們轉為數字進行數學運算，因此報錯。
+程式碼中加入了 numeric_only=True 參數，這會告訴 Pandas 只計算數值欄位的相關性，從而避開文字欄位造成的錯誤。
+
+從最新的執行結果可以看到，錯誤已經解決了。之前出現 ValueError 是因為資料集中包含 'sales' 和 'salary' 這兩個文字欄位，而 corrwith 函式預設會嘗試處理所有資料。當它遇到文字時，無法將其轉換為數字進行數學運算，所以會報錯。
+df.drop('left', axis=1).corrwith(df['left'], numeric_only=True).round(2)
+
+##Error03
+這個錯誤 AttributeError: 'float' object has no attribute 'round' 是因為 accuracy_score 回傳的是 Python 的基本浮點數（float），而基本浮點數並沒有 .round() 這個方法（這是 NumPy 或 Pandas 特有的）。
+我已經將程式碼修改為使用 Python 內建的 round(數值, 位數) 函式，這樣就能正常執行並顯示四捨五入後的結果了。
+print('正確率：', accuracy_score(y_test, y_pred).round(2))
+#print('正確率：', round(accuracy_score(y_test, y_pred),2))
+
+##Error04
+這個錯誤 AttributeError: 'float' object has no attribute 'round' 是因為 gs.best_score_ 和 score 變數都是 Python 的原生浮點數（float），而原生浮點數並不支援 .round() 這種呼叫方式（那是 NumPy 或 Pandas 物件才有的方法）。
+
+我已經幫您將程式碼修正，改用 Python 內建的 round(數值, 位數) 函式，這樣就能順利執行並顯示結果了。
+這個錯誤 SyntaxError: unterminated string literal 是因為程式碼在修改過程中，print 函式內的字串被拆散到兩行了，導致 Python 找不到字串的結尾（引號）。
+我已經修正了儲存格 0WNWjPftwiQb 的語法錯誤，將斷掉的字串接回同一行，並確保 print 語句語法正確。
+這個錯誤 AttributeError: 'float' object has no attribute 'round' 是因為在 Python 中，原生的浮點數（float）型別並不具備 .round() 這個方法。雖然 NumPy 的數值型態有這個方法，但 Scikit-learn 的 best_score_ 或 score() 回傳的是標準 Python float。
+我已經幫您將儲存格 xUcv8-cowiQe 中的語法也一併修正，改用 Python 內建的 round(數值, 位數) 格式。
+#print('最佳預測參數', gs.best_params_)
+print('訓練集交叉驗證的最佳結果', gs.best_score_.round(3))
+print('測試集的結果', score.round(3))
+
+print('最佳預測參數', gs.best_params_)
+print('訓練集交叉驗證的最佳結果', round(gs.best_score_, 3))
+print('測試集的結果', round(score, 3))
+
+
+
