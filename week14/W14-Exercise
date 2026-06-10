@@ -1,4 +1,4 @@
-# W14-Exercise
+# W14-Exercise_C113181132
 
 ## Error01
 ValueError: could not convert string to float: 'sales' 表示 df.corr() 方法嘗試對非數值型資料（特別是 'sales' 欄位，它包含字串值）計算相關性。corr() 方法只能處理數值型資料。
@@ -13,3 +13,61 @@ sns.heatmap(df.corr(numeric_only=True).round(2), annot=True, cmap='coolwarm');
 - sns.heatmap(...): 使用 Seaborn 函式庫中的 heatmap 函式來繪製熱力圖。
 - annot=True: 在熱力圖的每個單元格中顯示相關係數的數值。
 - cmap='coolwarm': 設定熱力圖的顏色映射。'coolwarm' 是一種常見的色譜，通常用於表示正相關（暖色）和負相關（冷色），並且中間色表示接近零的相關性。
+## Error02
+出現錯誤「ValueError: could not convert string to float: 'sales'」是因為您嘗試使用 corrwith() 函數計算與非數值列（具體來說是 'sales' 和 'salary'）的相關性。
+corrwith() 方法需要的是數值資料。要解決此問題，您應該在呼叫 corrwith() 之前僅選擇數值資料列。我會修改單元格以排除非數值列。
+程式碼已成功執行。它顯示了每個數值特徵與 'left' 列的相關性。例如，'satisfaction_level' 與 'left' 的負相關係數為 -0.39，
+這意味著滿意度較低的員工更有可能離職。相反，'time_spend_company' 與 'left' 的正相關係數為 0.14，表明在公司工作時間較長的員工離職的可能性略高（儘管這種相關性較弱）。
+```
+#df.drop('left', axis=1).corrwith(df['left']).round(2)
+df.drop('left', axis=1).select_dtypes(include=np.number).corrwith(df['left']).round(2)
+```
+## Error03
+錯誤訊息 AttributeError: 'float' object has no attribute 'round' 表示在 accuracy_score 返回的浮點數物件上呼叫 round() 方法時出錯了。
+雖然 accuracy_score 通常會返回一個浮點數，但為了確保程式碼的兼容性或處理某些特殊情況，建議使用 Python 內建的 round() 函數，它接受一個數值和要保留的小數點位數作為參數。我將修改這行程式碼。
+```
+#print('正確率: ', accuracy_score(y_test, y_pred).round(2))
+print('正確率: ', round(accuracy_score(y_test, y_pred), 2))
+```
+## Error04
+錯誤訊息 AttributeError: 'float' object has no attribute 'round' 表示在浮點數物件上呼叫了 round() 方法，
+但這個方法不存在。Python 中，round() 是一個內建函數，它接受一個數值和要保留的小數點位數作為參數。因此，應該將 score.round(3) 改為 round(score, 3) 來修正這個錯誤。
+```
+#param_grid = {'model':[LogisticRegression(), SVC(),
+param_grid = {'model':[LogisticRegression(), SVC(),
+#print('測試集的結果', score.round(3))
+print('測試集的結果', round(score, 3))
+```
+## Error05
+The error in cell xUcv8-cowiQe is an AttributeError because you're trying to use the .round() method on a float object, which doesn't exist.
+You should use the built-in round() function instead. I will fix the code by changing score.round(3) to round(score, 3).
+```
+#print('測試集的結果', score.round(3))
+print('測試集的結果', round(score, 3))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
