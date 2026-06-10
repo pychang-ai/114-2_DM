@@ -1,0 +1,131 @@
+# w14-Exercise_C113181119
+##Error 01
+ValueError: could not convert string to float: 'sales'
+
+這段程式碼會使用網格搜尋（GridSearchCV）來為隨機森林模型（RandomForestClassifier）尋找最佳的 n_estimators 參數。它建立了一個包含資料預處理和隨機森林模型的
+管線（Pipeline），然後定義了一個 param_grid 來測試不同數量的決策樹（50, 100, 150, 200, 300, 400, 500）。最後，它會訓練模型，並印出最佳參數、訓練集的交叉驗
+證結果、測試集的表現以及混淆矩陣。程式碼在執行 4483c93c 儲存格時出現 NameError: name 'Pipeline' is not defined 錯誤。這是因為 Pipeline 類別在使用前沒有被
+導入。我會修改程式碼，加入 from sklearn.pipeline import Pipeline 來解決這個問題。我已經修正了 NameError: name 'Pipeline' is not defined 的錯誤。我在代
+碼中加入了 from sklearn.pipeline import Pipeline 語句。請執行修改後的儲存格以繼續。
+```
+錯誤:sns.heatmap(df.corr().round(2), annot=True, cmap='coolwarm');
+正確:sns.heatmap(df.corr(numeric_only=True).round(2), annot=True, cmap='coolwarm');
+```
+這段程式碼是用來繪製資料框 df 中各個數值型欄位之間相關係數的熱力圖。讓我詳細解釋一下：
+
+-df.corr(numeric_only=True): 這個部分會計算 df 資料框中所有數值型欄位之間的皮爾遜相關係數。numeric_only=True 
+  確保只計算數值型欄位，忽略非數值型欄位（例如文字或類別）。結果是一個相關係數矩陣，顯示每對欄位之間的關係強度和方向（正相關或負相關）。
+  
+-.round(2): 這是將相關係數矩陣中的所有數值四捨五入到小數點後兩位，使結果更易讀。
+
+-sns.heatmap(...): 這是使用 seaborn 庫中的 heatmap 函數來繪製熱力圖。
+
+-annot=True: 這個參數會在熱力圖的每個單元格中顯示相關係數的數值
+
+-cmap='coolwarm': 這個參數設定了熱力圖的顏色映射。coolwarm 是一種常用的顏色方案，通常用藍色表示負相關，用紅色表示正相關，顏色越深表示相關性越強。
+
+##Error 02
+
+ValueError: could not convert string to float: 'sales'
+
+這個錯誤 ValueError: could not convert string to float: 'sales' 的意思是：程式嘗試將一個無法轉換
+為浮點數的字串（在這個例子中是 'sales' 欄位中的值）轉換成浮點數，因此發生了數值錯誤。
+
+```
+錯誤：df.drop('left', axis=1).corrwith(df['left']).round(2)
+正確：df.select_dtypes(include=np.number).drop('left', axis=1).corrwith(df['left']).round(2)
+```
+這個錯誤 NameError: name 'data_pl' is not defined 的意思是：程式嘗試使用一個名為 data_pl 的變數，但這個變
+數在程式碼執行到這裡之前尚未被定義或創建。
+
+-data_pl 是一個 ColumnTransformer 物件，它被用來處理資料的前置處理步驟（例如數值型資料的標準化和類別型資料的獨熱編碼）。
+
+-data_pl 的定義是在另一個程式碼儲存格中（根據筆記本的上下文，它是在 X8KbEQaQwiQW 這個儲存格中）。
+
+##Error 03
+
+AttributeError: 'float' object has no attribute 'round'
+
+這個錯誤 AttributeError: 'float' object has no attribute 'round' 是因為 accuracy_score 函數回傳的
+是 Python 的基本浮點數 (float) 型態，而 Python 的 float 物件並沒有 .round() 這個方法（這與 NumPy 或
+Pandas 的物件不同）。要修正這個問題，應該使用 Python 內建的 round() 函數，將結果包起來。
+
+```
+錯誤：print('正確率：', accuracy_score(y_test, y_pred).round(2))
+正確：print('正確率：', round(accuracy_score(y_test, y_pred), 2))
+```
+
+這段程式碼的主要目的是建立一個基準模型 (Baseline Model)，用來評估最簡單的預測策略在目前的資料集上表現如何。以下是詳細的解釋：
+
+－導入工具：
+DummyClassifier: 一個簡單的分類器，它不看資料特徵，只根據簡單的規則（如：永遠預測出現次數最多的類別）來預測。
+confusion_matrix, classification_report, accuracy_score: 用於評估模型表現的各種指標。
+
+－建立與訓練模型：
+dmy = DummyClassifier(strategy='most_frequent'): 這裡設定模型策略為「預測最常出現的類別」。在這個資料集中，大部分員工都「未離職」，所以這個模型會永遠預測「不離職」。
+dmy.fit(X_train, y_train): 讓模型「學習」訓練集中哪個類別最常出現。
+
+－進行預測：
+y_pred = dmy.predict(X_test): 對測試集進行預測。因為策略的關係，這裡的 y_pred 裡面所有的預測結果都會是 0（不離職）。
+
+－評估結果：
+print('正確率：', round(accuracy_score(y_test, y_pred), 2)): 計算預測正確的比例。目前的結果是 0.76，代表即使不看任何資料，只要猜不離職，就有 76% 的勝率。
+confusion_matrix: 顯示混亂矩陣。結果 [[3428, 0], [1072, 0]] 顯示它成功抓到了 3428 個不離職的人，但完全沒抓到那 1072 個真正離職的人。
+classification_report: 顯示更詳細的統計，如精確率 (Precision) 和召回率 (Recall)。可以看到對於類別 1（離職）的指標全部都是 0。
+
+##Error 0４
+
+AttributeError: 'float' object has no attribute 'round'
+
+與之前遇到的問題相同：Scikit-learn 回傳的分數（如 gs.best_score_ 和 score）是 Python 的基本浮點數 (float)，
+而這種型別不支援 .round() 方法。我已經幫您將其修改為使用內建的 round() 函數，並整合回儲存格中。
+
+```
+錯誤１：param_grid = {'model':[LogisticRegression(), SVC(), 
+正確１：param_grid = {'model':[LogisticRegression(), SVC(),KNeighborsClassifier(), DecisionTreeClassifier(max_depth=10)]}
+錯誤２：print('訓練集交叉驗證的最佳結果', gs.best_score_.round(3))
+　　　　print('測試集的結果', score.round(3))
+正確２：print('訓練集交叉驗證的最佳結果', round(gs.best_score_, 3))
+　　　　print('測試集的結果', round(score, 3))
+```
+
+這個儲存格 0WNWjPftwiQb 的執行結果非常理想，以下是詳細的解釋：
+
+－最佳模型與參數： 
+網格搜尋（GridSearchCV）在四個模型中，發現 決策樹 (DecisionTreeClassifier) 且設定 max_depth=10 的表現
+最好。這代表在目前的特徵下，樹狀結構的模型能比線性模型（如邏輯回歸）或距離模型（如 KNN）更精準地捕捉員工離職的模式。
+
+－準確度表現：
+訓練集交叉驗證結果 (0.978)：代表在訓練過程中，模型的平均正確率高達 97.8%。
+測試集結果 (0.977)：這是在模型「沒看過」的新資料上的表現。這兩個數字非常接近，顯示模型沒有過擬合 (Overfitting)，泛化能力很強。
+
+－混亂矩陣分析：
+[3395, 33]：在 3428 位「未離職」的人中，模型正確預測了 3395 人，只猜錯 33 人。
+[70, 1002]：在 1072 位「離職」的人中，模型正確抓到了 1002 人，漏掉了 70 人。
+
+##Error 05
+
+AttributeError: 'float' object has no attribute 'round'
+
+這個錯誤 AttributeError: 'float' object has no attribute 'round' 是因為在儲存格 xUcv8-cowiQe 
+中，gs.best_score_ 和score 的結果是 Python 的基本浮點數 (float) 型態，而 Python 的 float 物件並沒有 .round() 這個方法。
+
+```
+錯誤１：param_grid = {'model':[RandomForestClassifier(), AdaBoostClassifier(), 
+正確１：param_grid = {'model':[RandomForestClassifier(), AdaBoostClassifier(),BaggingClassifier(), XGBClassifier()]}
+錯誤２：print('訓練集交叉驗證的最佳結果', gs.best_score_.round(3))
+　　　　print('測試集的結果', score.round(3))
+正確２：print('訓練集交叉驗證的最佳結果', round(gs.best_score_, 3))
+　　　　print('測試集的結果', round(score, 3))
+```
+
+儲存格 xUcv8-cowiQe 的執行結果顯示，在測試的多個整合學習模型（Random Forest, AdaBoost, Bagging, XGBoost）中，
+隨機森林 (RandomForestClassifier) 脫穎而出成為最佳模型。以下是詳細分析：
+
+－模型表現：
+交叉驗證準確率 (0.988) 與 測試集準確率 (0.986) 都非常高，且兩者幾乎一致，這表示模型在處理未見過的資料時非常穩健，沒有嚴重的過擬合問題。
+
+－混亂矩陣分析：
+在 3428 位「未離職」的員工中，模型僅誤判了 11 位。
+在 1072 位「真正離職」的員工中，模型精準抓到了 1022 位，僅漏掉了 50 位。
+
