@@ -1,0 +1,55 @@
+# W14-Exercise
+
+## Error01
+錯誤訊息ValueError: could not convert string to float: 'sales'表示您嘗試計算非數值列（例如「銷售額」）的相關性。此corr()方法僅適用於數值型資料。為了解決此問題，我將修改程式碼，使其僅計算數值列的相關性。
+
+
+```
+sns.heatmap(df.corr().round(2), annot=True, cmap='coolwarm');
+sns.heatmap(df.corr(numeric_only=True).round(2), annot=True, cmap='coolwarm');
+```
+這行程式碼的目的是繪製一個相關性熱力圖（heatmap），用來視覺化資料框 df 中各數值型欄位之間的相關性。具體來說：
+- df.corr(numeric_only=True): 計算資料框 df 中所有數值型欄位之間的皮爾遜相關係數。numeric_only=True 確保只對數值型欄位進行計算，避免非數值型欄位導致的錯誤。
+- .round(2): 將相關係數的結果四捨五入到小數點後兩位，使圖表更易讀
+- sns.heatmap(...): 使用 Seaborn 函式庫中的 heatmap 函式來繪製熱力圖。
+- annot=True: 在熱力圖的每個單元格中顯示相關係數的數值。
+- cmap='coolwarm': 設定熱力圖的顏色映射。'coolwarm' 是一種常見的色譜，通常用於表示正相關（暖色）和負相關（冷色），並且中間色表示接近零的相關性。
+## Error02
+```
+df.drop('left', axis=1).corrwith(df['left']).round(2)
+df.drop('left', axis=1).corrwith(df['left'], numeric_only=True).round(2)
+```
+所選儲存格中的錯誤ValueError: could not convert string to float: 'sales'表示您嘗試計算分類列（例如「銷售額」）與「左側」列之間的相關性。corrwith()預設情況下
+，此方法會嘗試計算所有列的相關性。為了解決此問題，我將修改程式碼，使其僅計算數值列的相關性，方法是numeric_only=True在該corrwith()方法中添加一些程式碼。
+## Error03
+```
+print('正確率：', accuracy_score(y_test, y_pred).round(2))
+print('正確率：', round(accuracy_score(y_test, y_pred), 2))
+```
+出現此錯誤AttributeError: 'float' object has no attribute 'round'是因為您試圖.round()對浮點數呼叫該方法。
+此accuracy_score函數傳回的是一個浮點數，要對其進行四捨五入，您應該使用內建函數。我將通過更改為.round()來修復此問題。accuracy_score(y_test, y_pred).round(2)round(accuracy_score(y_test, y_pred), 2)
+## Error04
+```
+param_grid = {'model':[LogisticRegression(), SVC(), 
+
+param_grid = {'model':[LogisticRegression(), SVC(),
+              KNeighborsClassifier(), DecisionTreeClassifier(max_depth=10)]}
+
+print('測試集的結果', score.round(3))
+print('測試集的結果', round(score, 3))
+```
+這個錯誤AttributeError: 'float' object has no attribute 'round'意味著你試圖round()對浮點數使用一個方法，但浮點數沒有這個方法。
+要解決這個問題，你應該使用內建round()函數。我會修改程式碼，將其更改score.round(3)為round(score, 3)。
+## Error05
+```
+param_grid = {'model':[RandomForestClassifier(), AdaBoostClassifier(), 
+
+param_grid = {'model':[RandomForestClassifier(), AdaBoostClassifier(),
+                       BaggingClassifier(), XGBClassifier()]}
+
+print('測試集的結果', score.round(3))
+print('測試集的結果', round(score, 3))
+```
+這個錯誤AttributeError: 'float' object has no attribute 'round'意味著你試圖round()對浮點數使用一個方法，但浮點數沒有這個方法。要解決這個問題，你應該使用內建round()函數。
+我會修改程式碼，將其更改score.round(3)為round(score, 3)。
+
