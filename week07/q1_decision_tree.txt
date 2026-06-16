@@ -1,0 +1,123 @@
+C113181123 吳旭崴
+from sklearn.datasets import load_wine
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# 載入資料
+wine = load_wine()
+X_train, X_test, y_train, y_test = train_test_split(wine.data, wine.target, test_size=0.3, random_state=42)
+
+depths = [2, 3, 5, 7, 10, None]
+train_scores = []
+test_scores = []
+
+print("--- 準確率比較 ---")
+for d in depths:
+    dt = DecisionTreeClassifier(max_depth=d, random_state=42)
+    dt.fit(X_train, y_train)
+    train_acc = dt.score(X_train, y_train)
+    test_acc = dt.score(X_test, y_test)
+    train_scores.append(train_acc)
+    test_scores.append(test_acc)
+    print(f"max_depth={d}：訓練={train_acc:.4f} 測試={test_acc:.4f}")
+
+# 特徵重要性 (以最後一個模型為例)
+importances = dt.feature_importances_
+feat_imp = pd.Series(importances, index=wine.feature_names).sort_values(ascending=False)
+
+# 繪製折線圖觀察過擬合
+plt.figure(figsize=(10, 5))
+plt.plot([str(d) for d in depths], train_scores, label='Train Accuracy', marker='o')
+plt.plot([str(d) for d in depths], test_scores, label='Test Accuracy', marker='o')
+plt.xlabel('max_depth')
+plt.ylabel('Accuracy')
+plt.title('Decision Tree: Train vs Test Accuracy')
+plt.legend()
+plt.show()
+
+# 視覺化樹狀圖
+plt.figure(figsize=(20, 10))
+plot_tree(dt, feature_names=wine.feature_names, class_names=wine.target_names, filled=True, max_depth=3)
+plt.show()
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import classification_report
+
+# 1. 建立測試資料 (略，使用提示中的程式碼)
+# ... (此處省略資料生成部分) ...
+
+# 2. 自動區分欄位
+num_cols = df.select_dtypes(include=['int64', 'float64']).drop(columns=['is_fault']).columns.tolist()
+cat_cols = df.select_dtypes(include=['object']).columns.tolist()
+
+# 3. 建立預處理器
+num_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='mean')),
+    ('scaler', StandardScaler())
+])
+cat_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='most_frequent')),
+    ('onehot', OneHotEncoder(handle_unknown='ignore'))
+])
+preprocessor = ColumnTransformer(transformers=[
+    ('num', num_transformer, num_cols),
+    ('cat', cat_transformer, cat_cols)
+])
+
+# 4. 準備資料
+X = df.drop('is_fault', axis=1)
+y = df['is_fault']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 5. 多模型訓練
+models = {
+    'LogisticRegression': LogisticRegression(max_iter=200),
+    'KNN': KNeighborsClassifier(),
+    'SVM': SVC(),
+    'DecisionTree': DecisionTreeClassifier(random_state=42)
+}
+
+results = {}
+trained_pipes = {}
+
+for name, model in models.items():
+    pipe = Pipeline([('pre', preprocessor), ('clf', model)])
+    pipe.fit(X_train, y_train)
+    results[name] = pipe.score(X_test, y_test)
+    trained_pipes[name] = pipe
+
+# 6. 排序印出
+sorted_results = sorted(results.items(), key=lambda x: x[1], reverse=True)
+best_model_name = sorted_results[0][0]
+
+# 7. 輸出結果
+print(f"最佳模型: {best_model_name}")
+y_pred = trained_pipes[best_model_name].predict(X_test)
+print(classification_report(y_test, y_pred))
+
+Q1：決策樹為什麼容易過擬合？max_depth 如何幫助控制過擬合？除了 max_depth，還有什麼參數可以用來防止過擬合？
+A1：
+
+原因：決策樹在生長過程中會試圖完美切分每一個樣本，如果沒有限制，它會持續分裂直到每個葉子節點都只包含一個類別，這會導致模型學到資料中的「雜訊」而非一般規律。
+max_depth 的作用：透過限制樹的最大深度，可以強制模型停止生長，避免結構過於複雜，進而提高泛化能力。
+其他參數：
+min_samples_split：分裂一個節點所需的最小樣本數。
+min_samples_leaf：一個葉子節點所需的最小樣本數。
+max_leaf_nodes：限制最大葉子節點的數量。
+Q2：決策樹的 feature_importances_ 代表什麼意義？如果某個特徵的重要性為 0，代表什麼？你覺得特徵重要性分析對實務應用有什麼幫助？
+A2：
+
+意義：代表該特徵在所有節點分裂中，對降低「不純度」（如 Gini 或 Entropy）的貢獻總和。數值越高，代表該特徵對分類的影響力越大。
+重要性為 0：代表該特徵在模型構建過程中完全沒有被選作分裂節點，對模型的預測結果沒有直接貢獻。

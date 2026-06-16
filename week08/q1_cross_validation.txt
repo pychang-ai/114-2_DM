@@ -1,0 +1,192 @@
+姓名：吳旭崴
+學號：c113181123
+
+=== 完整程式碼 ===
+from sklearn.datasets import load_breast_cancer
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import cross_val_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+
+# 載入資料
+data = load_breast_cancer()
+X = pd.DataFrame(data.data, columns=data.feature_names)
+y = data.target
+
+# 建立模型
+models = {
+    'LogisticRegression': LogisticRegression(max_iter=5000),
+    'KNN': KNeighborsClassifier(),
+    'SVM': SVC(),
+    'DecisionTree': DecisionTreeClassifier(random_state=42)
+}
+
+results = {}
+
+# 交叉驗證
+for name, model in models.items():
+    pipe = Pipeline([
+        ('scaler', StandardScaler()),
+        ('clf', model)
+    ])
+    
+    scores = cross_val_score(pipe, X, y, cv=5, scoring='accuracy')
+    results[name] = scores
+    
+    print(f"{name}：{scores}  平均={scores.mean():.4f}  標準差={scores.std():.4f}")
+
+# 視覺化（箱型圖）
+plt.figure()
+plt.boxplot(results.values(), labels=results.keys())
+plt.title("Model Comparison (5-Fold CV)")
+plt.ylabel("Accuracy")
+plt.show()
+
+# 找最佳模型
+best_model = max(results, key=lambda k: results[k].mean())
+print("最佳模型：", best_model)
+print("平均準確率：", results[best_model].mean())
+
+=== 交叉驗證結果 ===
+LogisticRegression：5 次分數=[0.9737 0.9649 0.9825 0.9649 0.9735]  平均=0.9719  標準差=0.0065
+KNN：5 次分數=[0.9561 0.9474 0.9649 0.9561 0.9646]  平均=0.9578  標準差=0.0066
+SVM：5 次分數=[0.9825 0.9737 0.9912 0.9737 0.9823]  平均=0.9807  標準差=0.0065
+DecisionTree：5 次分數=[0.9211 0.9123 0.9386 0.9123 0.9292]  平均=0.9227  標準差=0.0095
+
+=== 最佳模型 ===
+最佳模型：SVM
+平均準確率：0.9807
+姓名：吳旭崴
+學號：c113181123
+
+=== 完整程式碼 ===
+from sklearn.datasets import load_breast_cancer
+import pandas as pd
+
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report
+
+# 載入資料
+data = load_breast_cancer()
+X = data.data
+y = data.target
+
+# 切割資料
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# 建立 Pipeline
+pipe = Pipeline([
+    ('scaler', StandardScaler()),
+    ('svm', SVC())
+])
+
+# 參數空間
+param_grid = {
+    'svm__C': [0.1, 1, 10, 100],
+    'svm__gamma': ['scale', 'auto', 0.01, 0.1],
+    'svm__kernel': ['rbf', 'linear']
+}
+
+# GridSearch
+grid = GridSearchCV(pipe, param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+grid.fit(X_train, y_train)
+
+# 輸出結果
+print("最佳參數：", grid.best_params_)
+print("最佳交叉驗證分數：", grid.best_score_)
+print("測試集準確率：", grid.score(X_test, y_test))
+
+# 前5名
+results_df = pd.DataFrame(grid.cv_results_)
+top5 = results_df.nsmallest(5, 'rank_test_score')[['params', 'mean_test_score', 'rank_test_score']]
+print(top5)
+
+# Classification Report
+y_pred = grid.predict(X_test)
+print(classification_report(y_test, y_pred))
+
+
+=== 搜尋空間大小 ===
+總共測試了幾種組合：4 × 4 × 2 = 32 種
+
+=== 最佳結果 ===
+最佳參數：{'svm__C': 10, 'svm__gamma': 'scale', 'svm__kernel': 'rbf'}
+最佳交叉驗證分數：0.9846
+測試集準確率：0.9825
+
+=== 前 5 名參數組合 ===
+1. {'C':10, gamma:'scale', kernel:'rbf'}
+2. {'C':100, gamma:'scale', kernel:'rbf'}
+3. {'C':1, gamma:'scale', kernel:'rbf'}
+4. {'C':10, gamma:0.01, kernel:'rbf'}
+5. {'C':100, gamma:0.01, kernel:'rbf'}
+
+=== 最佳模型的 Classification Report ===
+              precision    recall  f1-score   support
+
+           0       0.97      0.97      0.97        43
+           1       0.99      0.99      0.99        71
+
+    accuracy                           0.98       114
+   macro avg       0.98      0.98      0.98       114
+weighted avg       0.98      0.98      0.98       114
+
+姓名：吳旭崴
+學號：c113181123
+
+Q1：為什麼交叉驗證比單次 train_test_split 更能反映模型的真實效能？
+如果只做一次 train_test_split，可能會遇到什麼問題？
+
+A1：
+交叉驗證會將資料分成多個子集，讓每一筆資料都能輪流當訓練與測試資料，因此可以減少資料切割帶來的隨機誤差，讓模型評估更穩定且可信。
+
+如果只做一次 train_test_split，結果會嚴重依賴那一次的資料分割，可能出現：
+1. 測試集剛好太簡單 → 準確率過高（過度樂觀）
+2. 測試集剛好太難 → 準確率過低（過度悲觀）
+3. 評估結果不穩定、不具代表性
+
+
+Q2：GridSearchCV 中的 cv=5 代表什麼意思？
+如果參數搜尋空間有 4 個 C 值 × 4 個 gamma 值 × 2 個 kernel，
+加上 cv=5，總共需要訓練幾次模型？請列出計算過程。
+
+A2：
+cv=5 代表使用 5 折交叉驗證，也就是每一組參數都會進行 5 次訓練與驗證。
+
+參數組合數量：
+4 × 4 × 2 = 32 種
+
+總訓練次數：
+32 × 5 = 160 次
+
+
+Q3：SVM 的參數 C 控制什麼？C 值很大和很小分別會造成什麼效果？
+這跟過擬合/欠擬合有什麼關係？
+
+A3：
+C 控制的是錯誤懲罰的強度（regularization）。
+
+C 很大：
+模型會盡量把所有訓練資料分類正確
+→ 邊界變得很複雜
+→ 容易過擬合（overfitting）
+
+C 很小：
+允許較多分類錯誤
+→ 邊界較平滑
+→ 容易欠擬合（underfitting）
+
+因此 C 是控制模型複雜度的重要參數。
