@@ -1,0 +1,72 @@
+姓名：林岱俐
+學號：C113181111
+
+=== 完整程式碼 ===
+from sklearn.datasets import load_wine
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# 載入資料集
+wine = load_wine()
+X_train, X_test, y_train, y_test = train_test_split(
+    wine.data, wine.target, test_size=0.3, random_state=42
+)
+
+depths = [2, 3, 5, 7, 10, None]
+train_scores = []
+test_scores = []
+
+# 比較不同深度
+for d in depths:
+    dt = DecisionTreeClassifier(max_depth=d, random_state=42)
+    dt.fit(X_train, y_train)
+    train_scores.append(dt.score(X_train, y_train))
+    test_scores.append(dt.score(X_test, y_test))
+
+# 特徵重要性 (以最後一個模型 max_depth=None 為例)
+importances = dt.feature_importances_
+feat_imp = pd.Series(importances, index=wine.feature_names).sort_values(ascending=False)
+
+# 視覺化準確率變化 (過擬合觀察)
+plt.figure(figsize=(10, 6))
+plt.plot([str(d) for d in depths], train_scores, label='Train Accuracy', marker='o')
+plt.plot([str(d) for d in depths], test_scores, label='Test Accuracy', marker='s')
+plt.title('Accuracy vs Max Depth')
+plt.legend()
+plt.show()
+=== 不同 max_depth 的準確率比較 ===
+max_depth=2：訓練=0.944  測試=0.870
+
+max_depth=3：訓練=0.992  測試=0.963
+
+max_depth=5：訓練=1.000  測試=0.963
+
+max_depth=7：訓練=1.000  測試=0.963
+
+max_depth=10：訓練=1.000  測試=0.963
+
+max_depth=None：訓練=1.000  測試=0.963
+=== 最佳 max_depth ===
+最佳 max_depth：3
+
+測試集準確率：0.963
+=== 特徵重要性前 5 名 ===
+flavanoids 
+
+color_intensity 
+
+proline
+
+ash
+
+alcohol 
+=== 過擬合觀察 ===
+從準確率折線圖可以明顯觀察到：
+
+訓練準確率（Train Accuracy）：隨著 max_depth 增加而持續攀升，當深度達到 5 或更高時，訓練準確率直接達到 1.0 (100%)。這代表模型已經完全學習（甚至記住）了訓練集的所有細節。
+
+測試準確率（Test Accuracy）：在 max_depth=3 之後就進入了停滯期，並沒有隨著深度增加而進步。
+
+差距變化：當 max_depth 不受限制（None）時，訓練與測試準確率之間的差距拉大。這顯示模型過度擬合了訓練資料中的雜訊，導致泛化能力無法進一步提升，這就是典型的 過擬合（Overfitting） 現象。
