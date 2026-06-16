@@ -1,0 +1,25 @@
+# w14-Exercise_C113181119
+##Error 01
+ValueError: could not convert string to float: 'sales'
+
+這段程式碼會使用網格搜尋（GridSearchCV）來為隨機森林模型（RandomForestClassifier）尋找最佳的 n_estimators 參數。它建立了一個包含資料預處理和隨機森林模型的
+管線（Pipeline），然後定義了一個 param_grid 來測試不同數量的決策樹（50, 100, 150, 200, 300, 400, 500）。最後，它會訓練模型，並印出最佳參數、訓練集的交叉驗
+證結果、測試集的表現以及混淆矩陣。程式碼在執行 4483c93c 儲存格時出現 NameError: name 'Pipeline' is not defined 錯誤。這是因為 Pipeline 類別在使用前沒有被
+導入。我會修改程式碼，加入 from sklearn.pipeline import Pipeline 來解決這個問題。我已經修正了 NameError: name 'Pipeline' is not defined 的錯誤。我在代
+碼中加入了 from sklearn.pipeline import Pipeline 語句。請執行修改後的儲存格以繼續。
+```
+錯誤:sns.heatmap(df.corr().round(2), annot=True, cmap='coolwarm');
+正確:sns.heatmap(df.corr(numeric_only=True).round(2), annot=True, cmap='coolwarm');
+```
+這段程式碼是用來繪製資料框 df 中各個數值型欄位之間相關係數的熱力圖。讓我詳細解釋一下：
+
+-df.corr(numeric_only=True): 這個部分會計算 df 資料框中所有數值型欄位之間的皮爾遜相關係數。numeric_only=True 
+  確保只計算數值型欄位，忽略非數值型欄位（例如文字或類別）。結果是一個相關係數矩陣，顯示每對欄位之間的關係強度和方向（正相關或負相關）。
+  
+-.round(2): 這是將相關係數矩陣中的所有數值四捨五入到小數點後兩位，使結果更易讀。
+
+-sns.heatmap(...): 這是使用 seaborn 庫中的 heatmap 函數來繪製熱力圖。
+
+-annot=True: 這個參數會在熱力圖的每個單元格中顯示相關係數的數值
+
+-cmap='coolwarm': 這個參數設定了熱力圖的顏色映射。coolwarm 是一種常用的顏色方案，通常用藍色表示負相關，用紅色表示正相關，顏色越深表示相關性越強。
