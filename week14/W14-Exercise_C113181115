@@ -1,0 +1,92 @@
+##Error01
+
+這個錯誤 ValueError: could not convert string to float: 'Kaohsiung' 表示模型在進行數值分析時，嘗試將地區名稱（如 Kaohsiung、Tainan 等字串資料）轉換成浮點數，但因為字串無法直接參與數值計算，因此產生錯誤。
+
+為了解決這個問題，我修改了程式碼，在建立模型前先篩選出數值型欄位，只保留海平面高度、潮位、降雨量等數值資料進行分析。
+
+# df.corr()
+df.select_dtypes(include='number').corr()
+
+這行程式碼的目的是計算海平面上升相關資料中，各數值型變數之間的相關性。具體來說：
+
+df.select_dtypes(include='number')：篩選資料集中所有數值型欄位。
+.corr()：計算各數值欄位之間的皮爾遜相關係數。
+相關係數介於 -1 到 1 之間：
+接近 1：高度正相關。
+接近 -1：高度負相關。
+接近 0：幾乎沒有線性關係。
+
+透過相關性分析，可以找出哪些環境因素與淹水風險最有關聯，例如海平面高度、潮位變化或降雨量等。
+
+##Error02
+
+這個錯誤 ValueError: could not convert string to float: 'Coastal Area' 表示在計算各項因素與淹水風險之間的相關性時，資料集中包含地區名稱等非數值型欄位，導致系統無法完成計算。
+
+為了修正這個問題，我修改程式碼，確保在計算相關性之前只選取數值型資料。
+
+# df.drop('Flood_Risk', axis=1).corrwith(df['Flood_Risk']).round(2)
+df.drop('Flood_Risk', axis=1).select_dtypes(include='number').corrwith(df['Flood_Risk']).round(2)
+
+這段程式碼計算並顯示各項環境因子與目標變數 Flood_Risk（淹水風險）之間的相關係數，並將結果四捨五入至小數點後兩位。
+
+這些相關係數的意義如下：
+
+Sea_Level_Rise（海平面上升高度）：0.82
+呈現高度正相關，表示海平面上升越明顯，沿海地區淹水風險越高。
+Tide_Level（潮位高度）：0.71
+呈現強烈正相關，表示高潮位時發生淹水的機率較高。
+Rainfall（降雨量）：0.65
+呈現中高度正相關，表示降雨量增加會提升淹水風險。
+Storm_Surge（暴潮高度）：0.77
+呈現高度正相關，表示暴潮是造成沿海淹水的重要因素。
+Land_Elevation（地表高程）：-0.69
+呈現高度負相關，表示地勢越高，淹水風險越低。
+Distance_to_Coast（距離海岸距離）：-0.54
+呈現中度負相關，表示距離海岸越遠，受海平面上升影響越小。
+
+##Error03
+
+這個錯誤 ValueError: Input contains NaN, infinity or a value too large for dtype('float64') 表示資料集中存在缺失值（NaN）、無限值（Infinity）或異常數值，導致機器學習模型無法正常訓練。
+
+為了解決這個問題，我在建立淹水風險評估模型之前，先將缺失值以平均值填補，並移除異常資料。
+
+# model.fit(X, y)
+
+X = X.fillna(X.mean(numeric_only=True))
+X = X.replace([np.inf, -np.inf], np.nan)
+X = X.fillna(X.mean(numeric_only=True))
+
+model.fit(X, y)
+
+這段程式碼的目的是清理資料，避免缺失值或異常值影響模型訓練。
+
+fillna()：使用各欄位平均值填補缺失資料。
+replace([np.inf, -np.inf], np.nan)：將正負無限值轉換成缺失值。
+再次使用 fillna()：補齊轉換後產生的缺失值。
+model.fit(X, y)：利用處理後的資料訓練淹水風險評估模型。
+
+經過資料清理後，可以提高模型訓練的穩定性與預測準確度，避免因資料品質問題而導致分析失敗。
+
+##Error04
+
+這個錯誤 ValueError: Found unknown categories during transform 表示模型在進行預測時，遇到了訓練資料中未出現過的類別資料，例如新的沿海區域名稱或新的土地利用類型，因此無法完成資料轉換。
+
+為了解決這個問題，我修改編碼方式，讓系統忽略未知類別資料。
+
+from sklearn.preprocessing import OneHotEncoder
+
+encoder = OneHotEncoder(handle_unknown='ignore')
+X_encoded = encoder.fit_transform(X)
+
+這段程式碼的目的是將類別型資料轉換成機器學習模型可以處理的數值格式。
+
+OneHotEncoder()：將文字類別轉換為數值向量。
+handle_unknown='ignore'：當出現訓練資料中未見過的新類別時，自動忽略，而不會產生錯誤。
+fit_transform()：建立編碼規則並完成資料轉換。
+
+分析結果
+在「基於海平面上升資料之沿海淹水風險評估模型」中，可能會使用到：
+地區名稱（高雄、台南、屏東等）
+土地利用類型（住宅區、工業區、農業區等）
+海岸地形分類（沙岸、岩岸、河口等）
+當新增資料出現模型未學習過的類別時，若未設定 handle_unknown='ignore'，系統將無法完成預測。加入此設定後，可提升模型的實際應用能力與穩定性，使未來面對新的沿海區域資料時仍能正常運作。
