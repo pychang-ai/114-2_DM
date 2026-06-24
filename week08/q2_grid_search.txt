@@ -1,0 +1,77 @@
+姓名：顏于萱
+學號：C113181107
+
+=== 完整程式碼 ===
+import pandas as pd
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report
+
+# 1. 載入資料
+data = load_breast_cancer()
+X = pd.DataFrame(data.data, columns=data.feature_names)
+y = data.target
+
+# 2. 切割資料 (test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# 3. 建立 Pipeline
+pipe = Pipeline([
+    ('scaler', StandardScaler()),
+    ('svm', SVC())
+])
+
+# 4. 定義參數搜尋空間
+param_grid = {
+    'svm__C': [0.1, 1, 10, 100],
+    'svm__gamma': ['scale', 'auto', 0.01, 0.1],
+    'svm__kernel': ['rbf', 'linear']
+}
+
+# 5. 使用 GridSearchCV (cv=5)
+grid = GridSearchCV(pipe, param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+grid.fit(X_train, y_train)
+
+# 6. 輸出結果與分析
+results_df = pd.DataFrame(grid.cv_results_)
+top5 = results_df.nsmallest(5, 'rank_test_score')[['params', 'mean_test_score', 'rank_test_score']]
+
+print(f"最佳參數：{grid.best_params_}")
+print(f"最佳交叉驗證分數：{grid.best_score_:.4f}")
+print(f"測試集準確率：{grid.score(X_test, y_test):.4f}")
+print("\n前 5 名參數組合：")
+print(top5.to_string(index=False))
+
+print("\n最佳模型的 Classification Report：")
+y_pred = grid.predict(X_test)
+print(classification_report(y_test, y_pred))
+
+=== 搜尋空間大小 ===
+總共測試了幾種組合：32 種 (4 個 C × 4 個 gamma × 2 個 kernel)
+
+=== 最佳結果 ===
+最佳參數：{'svm__C': 0.1, 'svm__gamma': 'scale', 'svm__kernel': 'linear'}
+最佳交叉驗證分數：0.9758
+測試集準確率：0.9825
+
+=== 前 5 名參數組合 ===
+1. {'svm__C': 0.1, 'svm__gamma': 'scale', 'svm__kernel': 'linear'}, Score: 0.9758
+2. {'svm__C': 0.1, 'svm__gamma': 'auto', 'svm__kernel': 'linear'}, Score: 0.9758
+3. {'svm__C': 0.1, 'svm__gamma': 0.01, 'svm__kernel': 'linear'}, Score: 0.9758
+4. {'svm__C': 0.1, 'svm__gamma': 0.1, 'svm__kernel': 'linear'}, Score: 0.9758
+5. {'svm__C': 1, 'svm__gamma': 'scale', 'svm__kernel': 'rbf'}, Score: 0.9736
+
+=== 最佳模型的 Classification Report ===
+precision    recall  f1-score   support
+
+           0       0.98      0.98      0.98        43
+           1       0.99      0.99      0.99        71
+
+    accuracy                           0.98       114
+   macro avg       0.98      0.98      0.98       114
+weighted avg       0.98      0.98      0.98       114

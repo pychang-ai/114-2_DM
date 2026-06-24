@@ -1,0 +1,63 @@
+姓名：顏于萱
+學號：C113181107
+
+=== 完整程式碼 ===
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import cross_val_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+
+# 1. 載入資料
+data = load_breast_cancer()
+X = pd.DataFrame(data.data, columns=data.feature_names)
+y = data.target
+
+# 2. 定義模型字典
+models = {
+    'LogisticRegression': LogisticRegression(max_iter=5000),
+    'KNN': KNeighborsClassifier(),
+    'SVM': SVC(),
+    'DecisionTree': DecisionTreeClassifier(random_state=42)
+}
+
+# 3. 執行交叉驗證與計算結果
+results = {}
+for name, model in models.items():
+    # 建立含標準化的 Pipeline
+    pipe = Pipeline([('scaler', StandardScaler()), ('clf', model)])
+    # 執行 5 折交叉驗證
+    scores = cross_val_score(pipe, X, y, cv=5, scoring='accuracy')
+    results[name] = scores
+    
+    # 印出細節
+    print(f"{name}：5 次分數={np.round(scores, 4)}")
+    print(f"平均={scores.mean():.4f}  標準差={scores.std():.4f}")
+    print("-" * 30)
+
+# 4. 找出最佳模型
+best_model_name = max(results, key=lambda k: results[k].mean())
+
+# 5. 繪製比較圖 (箱型圖)
+plt.figure(figsize=(10, 6))
+plt.boxplot(results.values(), labels=results.keys(), patch_artist=True)
+plt.title('Comparison of Model Performance (5-Fold CV)')
+plt.ylabel('Accuracy Score')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.show()
+
+=== 交叉驗證結果 ===
+LogisticRegression：5 次分數=[0.9825 0.9737 0.9737 0.9737 0.9912]  平均=0.9789 標準差=0.0068 
+KNN：5 次分數=[0.9649 0.9561 0.9825 0.9561 0.9646]  平均=0.9648 標準差=0.0096
+SVM：5 次分數=[0.9737 0.9561 0.9825 0.9649 0.9912]  平均=0.9737 標準差=0.0122
+DecisionTree：5 次分數=[0.9211 0.8860 0.9386 0.8947 0.8938]  平均=0.9068 標準差=0.0197
+
+=== 最佳模型 ===
+最佳模型：LogisticRegression
+平均準確率：0.9789

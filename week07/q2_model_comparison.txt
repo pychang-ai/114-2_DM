@@ -1,0 +1,118 @@
+姓名：顏于萱
+學號：C113181107
+
+=== 欄位自動分類結果 ===
+數值型欄位：['engine_hours', 'vibration_level', 'oil_temp', 'rpm']
+類別型欄位：['engine_type', 'maintenance_grade']
+
+=== 完整程式碼 ===
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import classification_report
+
+# 1. 建立測試資料
+np.random.seed(42)
+n = 400
+
+data = {
+    'engine_hours': np.random.randint(100, 20000, n),
+    'vibration_level': np.round(np.random.uniform(0.1, 8.0, n), 2),
+    'oil_temp': np.round(np.random.uniform(60, 120, n), 1),
+    'rpm': np.random.randint(500, 3000, n),
+    'engine_type': np.random.choice(['diesel', 'gas_turbine', 'steam'], n, p=[0.5, 0.3, 0.2]),
+    'maintenance_grade': np.random.choice(['A', 'B', 'C'], n, p=[0.3, 0.5, 0.2]),
+}
+df = pd.DataFrame(data)
+
+df.loc[np.random.choice(n, 20, replace=False), 'oil_temp'] = np.nan
+df.loc[np.random.choice(n, 10, replace=False), 'maintenance_grade'] = np.nan
+
+prob = 1 / (1 + np.exp(-(
+    0.0002 * df['engine_hours'] +
+    0.3 * df['vibration_level'] +
+    0.02 * df['oil_temp'].fillna(90) -
+    0.001 * df['rpm'] - 2.5
+)))
+df['is_fault'] = (np.random.random(n) < prob).astype(int)
+df.to_csv('engine_fault.csv', index=False)
+
+# 2. 自動區分欄位
+num_cols = df.select_dtypes(include=['int64', 'float64']).drop(columns=['is_fault']).columns.tolist()
+cat_cols = df.select_dtypes(include=['object']).columns.tolist()
+
+# 3. 建立預處理管道 (ColumnTransformer)
+num_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='median')),
+    ('scaler', StandardScaler())
+])
+
+cat_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='most_frequent')),
+    ('encoder', OneHotEncoder(handle_unknown='ignore'))
+])
+
+preprocessor = ColumnTransformer(transformers=[
+    ('num', num_transformer, num_cols),
+    ('cat', cat_transformer, cat_cols)
+])
+
+# 4. 切割資料集
+X = df.drop(columns=['is_fault'])
+y = df['is_fault']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# 5. 多模型比較
+models = {
+    'LogisticRegression': LogisticRegression(max_iter=200),
+    'KNN': KNeighborsClassifier(),
+    'SVM': SVC(),
+    'DecisionTree': DecisionTreeClassifier(random_state=42)
+}
+
+results = {}
+trained_pipelines = {}
+
+for name, model in models.items():
+    pipe = Pipeline([('pre', preprocessor), ('clf', model)])
+    pipe.fit(X_train, y_train)
+    results[name] = pipe.score(X_test, y_test)
+    trained_pipelines[name] = pipe
+
+# 6. 印出排序後的結果
+print("=== 模型準確率比較表（由高到低）===")
+sorted_results = sorted(results.items(), key=lambda x: x[1], reverse=True)
+for rank, (name, score) in enumerate(sorted_results, 1):
+    print(f"{rank}. {name}：{score:.4f}")
+
+# 7. 對最佳模型印出 Classification Report
+best_model_name = sorted_results[0][0]
+best_pipe = trained_pipelines[best_model_name]
+y_pred = best_pipe.predict(X_test)
+
+print(f"\n=== 最佳模型 ({best_model_name}) 的 Classification Report ===")
+print(classification_report(y_test, y_pred, digits=4))
+
+=== 模型準確率比較表（由高到低）===
+1. LogisticRegression：0.7333
+2. SVM：0.7083
+3. KNN：0.6583
+4. DecisionTree：0.6333
+
+=== 最佳模型的 Classification Report ===
+              precision    recall  f1-score   support
+
+           0     0.7303    0.8553    0.7879        76
+           1     0.7419    0.5227    0.6133        44
+
+    accuracy                         0.7333       120
+   macro avg     0.7361    0.6890    0.7006       120
+weighted avg     0.7346    0.7333    0.7239       120

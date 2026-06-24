@@ -1,0 +1,83 @@
+姓名：顏于萱
+學號：C113181107
+
+=== 完整程式碼 ===
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_wine
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+
+# 1. 載入 wine 資料集並切割資料
+wine = load_wine()
+X_train, X_test, y_train, y_test = train_test_split(
+    wine.data, wine.target, test_size=0.3, random_state=42
+)
+
+# 2. 分別訓練不同 max_depth 的決策樹並記錄準確率
+depths = [2, 3, 5, 7, 10, None]
+train_scores = []
+test_scores = []
+
+for d in depths:
+    dt = DecisionTreeClassifier(max_depth=d, random_state=42)
+    dt.fit(X_train, y_train)
+    train_scores.append(dt.score(X_train, y_train))
+    test_scores.append(dt.score(X_test, y_test))
+
+# 3. 繪製折線圖觀察準確率變化
+plt.figure(figsize=(8, 5))
+# 將 None 轉為字串方便 X 軸連續顯示
+x_labels = [str(d) for d in depths]
+plt.plot(x_labels, train_scores, marker='o', label='Train Accuracy', color='blue')
+plt.plot(x_labels, test_scores, marker='s', label='Test Accuracy', color='orange')
+plt.xlabel('max_depth')
+plt.ylabel('Accuracy')
+plt.title('Decision Tree: Accuracy vs max_depth')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# 4. 用最佳 max_depth (結構最簡且測試集準確率最高者，即 max_depth=3) 訓練模型並輸出特徵重要性
+best_depth = 3
+best_dt = DecisionTreeClassifier(max_depth=best_depth, random_state=42)
+best_dt.fit(X_train, y_train)
+
+importances = best_dt.feature_importances_
+feat_imp = pd.Series(importances, index=wine.feature_names).sort_values(ascending=False)
+
+print("=== 特徵重要性前 5 名 ===")
+print(feat_imp.head(5))
+
+# 5. 視覺化決策樹 (max_depth=3 的版本)
+plt.figure(figsize=(20, 10))
+plot_tree(best_dt, feature_names=wine.feature_names, class_names=wine.target_names, filled=True)
+plt.title("Decision Tree Visualization (max_depth=3)")
+plt.show()
+
+=== 不同 max_depth 的準確率比較 ===
+max_depth=2：訓練=0.9435  測試=0.8704
+max_depth=3：訓練=0.9919  測試=0.9630
+max_depth=5：訓練=1.0000  測試=0.9630
+max_depth=7：訓練=1.0000  測試=0.9630
+max_depth=10：訓練=1.0000  測試=0.9630
+max_depth=None：訓練=1.0000  測試=0.9630
+
+=== 最佳 max_depth ===
+最佳 max_depth：3
+測試集準確率：0.9630
+(註：雖然從 max_depth=3 到 None 的測試集準確率皆相同，但為了落實奧卡姆剃刀原則、避免模型過於複雜或產生潛在的過擬合風險，故選擇結構最簡單、限制最嚴格的 max_depth=3 作為最佳參數。)
+
+=== 特徵重要性前 5 名 ===
+1. flavanoids (類黃酮)
+2. color_intensity (色彩強度)
+3. proline (脯氨酸)
+4. ash (灰分)
+5. alcohol (酒精)
+(註：前 4 個特徵已涵蓋所有權重分配，第 5 名特徵權重為 0。)
+
+=== 過擬合觀察 ===
+從折線圖與準確率數據可以觀察到：
+1. 當 max_depth=2 時，模型受限過嚴導致訓練與測試準確率皆較低，此時屬於「欠擬合（Underfitting）」狀態。
+2. 當 max_depth 增加到 3 時，測試集準確率達到最高峰（0.9630），此時模型具備最佳的泛化能力。
+3. 當 max_depth 超過 5 甚至到 None（不限制深度）時，訓練集準確率直接達到了 1.0000（100% 完美分類），但測試集準確率並未跟著提升，而是停滯在 0.9630。這說明當樹深度過深時，決策樹開始硬性記住訓練集中的雜訊與特例，使得訓練與測試的準確率差距拉大，呈現輕微的「過擬合（Overfitting）」傾向。因此，限制 max_depth 能有效發揮剪枝效果，防止模型過度擬合訓練資料。
