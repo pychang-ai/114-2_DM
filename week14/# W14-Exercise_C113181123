@@ -1,0 +1,59 @@
+# W14-Exercise_C113181123
+
+## error01：
+The error is caused because the corr() method cannot calculate correlations for non-numeric columns like 'sales'. I will fix this by selecting only the numerical columns from the DataFrame before computing the correlation matrix.
+```
+error code：sns.heatmap(df.corr().round(2), annot=True, cmap='coolwarm');
+true code：sns.heatmap(df.select_dtypes(include=np.number).corr().round(2), annot=True, cmap='coolwarm');
+```
+
+The code df.drop('left', axis=1).corrwith(df['left']).round(2) is performing a correlation analysis between each feature in the DataFrame and the 'left' column.
+Here's a breakdown:
+- df.drop('left', axis=1): This creates a new DataFrame by dropping the 'left' column from the original df. axis=1 specifies that a column should be dropped.
+- corrwith(df['left']): This method calculates the pairwise correlation between each column of the DataFrame created in the previous step (all columns except 'left') and the df['left'] Series. It essentially tells you how strongly each feature is related to whether an employee left or not.
+- round(2): This rounds the resulting correlation values to two decimal places for better readability.
+The error ValueError: could not convert string to float: 'sales' occurred because the corrwith method, like corr(), expects numerical data to perform correlation calculations. The 'sales' column, being a categorical (object) type, caused this error. To fix this, you would typically need to either convert categorical columns to numerical representations (e.g., using one-hot encoding or label encoding) or exclude them before running corrwith.
+
+## error02：
+The error is caused because the corrwith() method is attempting to calculate correlations with non-numeric columns such as 'sales'. I will fix this by first selecting only the numerical columns from the DataFrame before calculating their correlation with the 'left' column.
+```
+error code：df.drop('left', axis=1).corrwith(df['left']).round(2)
+true code：df.drop('left', axis=1).select_dtypes(include=np.number).corrwith(df['left']).round(2)
+```
+這行程式碼 df.drop('left', axis=1).select_dtypes(include=np.number).corrwith(df['left']).round(2) 的目的是計算 DataFrame 中除了 'left' 欄位之外的數值型欄位，與 'left' 欄位之間的相關性。
+
+- df.drop('left', axis=1): 這會從原始 DataFrame df 中移除 'left' 欄位。axis=1 表示移除的是欄位（而不是列）。這樣做是因為我們想要計算其他欄位與 'left' 欄位的相關性，所以 'left' 欄位本身不應該包含在用於計算相關性的特徵集中。
+- select_dtypes(include=np.number): 這是解決之前錯誤的關鍵一步。它會從上一步驟得到的 DataFrame 中，僅選擇數據類型為數值（例如 int 或 float）的欄位。這確保了接下來的相關性計算只在數值型數據上進行，避免了像 'sales' 或 'salary' 這樣的非數值型欄位引起 ValueError。
+- corrwith(df['left']): 這個方法會計算上一步驟中選取的每個數值型欄位，與原始 DataFrame df 中的 'left' 欄位（一個 Series）之間的皮爾遜相關係數。它會輸出一個 Series，其中包含每個特徵與 'left' 欄位的相關性值。
+- round(2): 最後，這會將計算出的相關係數值四捨五入到小數點後兩位，以便於閱讀和理解。
+
+- 這些相關係數的意義是：
+
+- satisfaction_level (滿意度): -0.39 - 呈現負相關，表示員工滿意度越低，離職的可能性越高。
+- last_evaluation (上次考評): 0.01 - 相關性非常弱，幾乎沒有線性關係。
+- number_project (專案數量): 0.02 - 相關性非常弱，幾乎沒有線性關係。
+- average_montly_hours (平均月工時): 0.07 - 相關性非常弱，幾乎沒有線性關係。
+- time_spend_company (在公司待的時間): 0.14 - 呈現弱的正相關，表示在公司待的時間越長，離職的可能性稍高（這可能需要進一步分析，例如考慮過長時間工作等因素）。
+- Work_accident (工作事故): -0.15 - 呈現弱的負相關，表示發生工作事故的員工離職的可能性略低。
+- promotion_last_5years (近5年是否晉升): -0.06 - 呈現弱的負相關，表示近5年有晉升的員工離職的可能性略低。
+- 總體來看，satisfaction_level 與離職率有最強的負相關，意味著員工滿意度是影響離職與否的重要因素。其他數值型特徵與離職率的線性相關性較弱。
+
+## error03：
+這個錯誤 AttributeError: 'float' object has no attribute 'round' 表示在一個浮點數（float）物件上呼叫了 round() 方法，但 Python 的內建 float 型別沒有這個方法。我們應該使用全域的 round() 函數，將浮點數作為第一個參數，要保留的小數位數作為第二個參數。因此，我會將 accuracy_score(y_test, y_pred).round(2) 改為 round(accuracy_score(y_test, y_pred), 2)。
+```
+error code：print('正確率：', accuracy_score(y_test, y_pred).round(2))
+true code：print('正確率：', round(accuracy_score(y_test, y_pred), 2))
+```
+
+## error04：
+這個錯誤 AttributeError: 'float' object has no attribute 'round' 表示您在一個浮點數（float）物件上呼叫了 round() 方法，但 Python 的內建 float 型別並沒有這個方法。您應該使用全域的 round() 函數，將浮點數作為第一個參數，要保留的小數位數作為第二個參數。因此，我會將 score.round(3) 改為 round(score, 3)。
+```
+error code：print('測試集的結果', score.round(3))
+true code：print('測試集的結果', round(score, 3))
+```
+## error05：
+同上
+```
+error code：print('測試集的結果', score.round(3))
+true code：print('測試集的結果', round(score, 3))
+```
