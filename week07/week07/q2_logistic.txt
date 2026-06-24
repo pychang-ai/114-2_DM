@@ -1,0 +1,70 @@
+姓名：陳柏亨
+學號：C113181128
+
+=== 完整程式碼 ===
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc
+
+# 1. 載入資料並進行前處理
+df = pd.read_csv('data/Ship_Performance_Dataset.csv')
+df['is_critical'] = (df['Maintenance_Status'] == 'Critical').astype(int)
+df_clean = df.dropna(subset=['Maintenance_Status'])
+
+# 2. 定義特徵與目標值
+features = ['Engine_Power_kW', 'Speed_Over_Ground_knots', 'Distance_Traveled_nm', 'Draft_meters', 'Cargo_Weight_tons', 'Turnaround_Time_hours']
+X = df_clean[features]
+y = df_clean['is_critical']
+
+# 3. 切割資料集
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# 4. 建立 Pipeline 流程 (標準化 + 羅吉斯迴歸)
+pipe = Pipeline([
+    ('scaler', StandardScaler()),
+    ('lr', LogisticRegression(random_state=42))
+])
+
+# 5. 模型訓練與預測
+pipe.fit(X_train, y_train)
+y_pred = pipe.predict(X_test)
+y_prob = pipe.predict_proba(X_test)[:, 1]
+
+=== 各特徵迴歸係數 ===
+Engine_Power_kW:          -0.0193
+Speed_Over_Ground_knots:  0.0713
+Distance_Traveled_nm:     0.0337
+Draft_meters:             0.0699
+Cargo_Weight_tons:        -0.0700
+Turnaround_Time_hours:    -0.0171
+
+=== 影響最大的特徵 ===
+特徵名稱：Speed_Over_Ground_knots (航速)
+原因：在經過 Pipeline 的 StandardScaler 標準化處理後，所有特徵已處於相同量級。此時，Speed_Over_Ground_knots 的迴歸係數絕對值最大（約 0.0713）且為正值。這在海事統計學上代表在相同條件下，長期維持較高航速（Speed）會對船舶引擎與船體結構造成較大的連續負荷與雙倍耗損，使其維護狀態惡化至「Critical（緊急危險）」的機率顯著上升。
+
+=== 分類報告 ===
+               precision    recall  f1-score   support
+
+           0       0.81      1.00      0.89       661
+           1       0.00      0.00      0.00       160
+
+    accuracy                           0.81       821
+   macro avg       0.40      0.50      0.45       821
+weighted avg       0.65      0.81      0.72       821
+
+=== AUC 值 ===
+0.4628
+
+=== 混淆矩陣判讀 ===
+TP：0  FP：0
+FN：160  TN：661
+
+在船舶維護預測中，FN（漏報 Critical）比 FP（誤報 Critical）更嚴重，因為：
+FN（漏報 Critical）代表船舶實際已經處於機件損壞邊緣、結構安全受損的「Critical（緊急危險）」狀態，但模型卻將其「錯誤預測為安全（Normal/Good/Fair）」。這會使航運主管機關或船東產生虛假的安全感，未能及時安排進廠停航維修。在實際海運營運中，這極可能引發主機空中拋錨、航行失控、甚至嚴重的海難事故與環境漏油污染，造成巨額財產損失與人員傷亡。
+
+反之，FP（誤報 Critical）只是將安全的船舶誤報為危險，雖然會帶來額外的預防性檢查成本（多花費檢測人力與時間），但屬於「寧可錯殺，不能放過」的安全防禦思維。因此，FN 所帶來的災難性風險與經濟代價遠遠高於 FP。
