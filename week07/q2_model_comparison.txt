@@ -1,0 +1,135 @@
+姓名：郭晉銘
+學號：C113181144
+
+=== 欄位自動分類結果 ===
+數值型欄位: ['engine_hours', 'vibration_level', 'oil_temp', 'rpm']
+類別型欄位: ['engine_type', 'maintenance_grade']
+
+=== 完整程式碼 ===
+（貼上你撰寫的完整 Python 程式碼）
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+
+# ==========================================
+# 1. 讀取資料與自動區分欄位型態
+# ==========================================
+df = pd.read_csv('engine_fault.csv')
+
+# 分離特徵與目標變數
+X = df.drop(columns=['is_fault'])
+y = df['is_fault']
+
+# 自動根據資料型態 (dtype) 區分數值型與類別型欄位
+num_features = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
+cat_features = X.select_dtypes(include=['object', 'category']).columns.tolist()
+
+print("--- 步驟 1: 自動欄位偵測完成 ---")
+print(f"數值型欄位: {num_features}")
+print(f"類別型欄位: {cat_features}\n")
+
+# 切割資料集 (80% 訓練, 20% 測試)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+
+# ==========================================
+# 2. 建立 ColumnTransformer 處理混合型資料
+# ==========================================
+num_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='median')),  # 數值型遺漏值填補中位數
+    ('scaler', StandardScaler())                    # 數值型標準化
+])
+
+cat_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),  # 類別型遺漏值填補固定字串
+    ('onehot', OneHotEncoder(handle_unknown='ignore'))                      # 類別型 One-Hot 編碼
+])
+
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', num_transformer, num_features),
+        ('cat', cat_transformer, cat_features)
+    ]
+)
+
+
+# ==========================================
+# 3. 建立四種分類模型的 Pipeline 清單
+# ==========================================
+models = {
+    'LogisticRegression': LogisticRegression(random_state=42),
+    'KNeighborsClassifier': KNeighborsClassifier(),
+    'SVC': SVC(random_state=42),
+    'DecisionTreeClassifier': DecisionTreeClassifier(random_state=42)
+}
+
+
+# ==========================================
+# 4 & 5. 訓練模型、計算準確率並由高到低排序
+# ==========================================
+accuracy_results = {}
+trained_pipelines = {}
+
+for name, model in models.items():
+    # 建立整合預處理與模型的 Pipeline
+    pipeline = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('classifier', model)
+    ])
+    
+    # 訓練模型
+    pipeline.fit(X_train, y_train)
+    
+    # 預測並計算測試集準確率
+    y_pred = pipeline.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+    
+    # 記錄結果
+    accuracy_results[name] = acc
+    trained_pipelines[name] = pipeline
+
+# 轉換為 DataFrame 並由高到低排序
+summary_df = pd.DataFrame(list(accuracy_results.items()), columns=['Model', 'Test Accuracy'])
+summary_df = summary_df.sort_values(by='Test Accuracy', ascending=False).reset_index(drop=True)
+
+print("--- 步驟 4 & 5: 模型準確率比較表 (由高到低排序) ---")
+print(summary_df.to_string(index=False, formatters={'Test Accuracy': '{:.4f}'.format}))
+print("\n" + "="*50 + "\n")
+
+
+# ==========================================
+# 6. 對最佳模型印出 Classification Report
+# ==========================================
+best_model_name = summary_df.loc[0, 'Model']
+best_pipeline = trained_pipelines[best_model_name]
+
+# 使用最佳模型重新進行預測
+y_pred_best = best_pipeline.predict(X_test)
+
+print(f"--- 步驟 6: 最佳模型 [{best_model_name}] 的詳細分類報告 ---")
+print(classification_report(y_test, y_pred_best))
+
+=== 模型準確率比較表（由高到低）===
+1.  LogisticRegression        0.7250
+2.  SVC                       0.6750
+3.  KNeighborsClassifier      0.6625
+4.  DecisionTreeClassifier    0.6375
+
+=== 最佳模型的 Classification Report ===
+（貼上最佳模型的分類報告）
+              precision    recall  f1-score   support
+
+           0       0.62      0.57      0.59        28
+           1       0.78      0.81      0.79        52
+
+    accuracy                           0.72        80
+   macro avg       0.70      0.69      0.69        80
+weighted avg       0.72      0.72      0.72        80
