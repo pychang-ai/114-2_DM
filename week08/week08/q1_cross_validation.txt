@@ -1,0 +1,58 @@
+姓名：李柏志
+學號：C113181145
+
+=== 完整程式碼 ===
+
+
+
+from sklearn.model_selection import cross_val_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+classifiers = {
+    "LR": LogisticRegression(max_iter=3000),
+    "KNN": KNeighborsClassifier(n_neighbors=5),
+    "SVM": SVC(kernel="rbf"),
+    "DT": DecisionTreeClassifier(random_state=1)
+}
+scores_dict = {}
+for model_name, clf in classifiers.items():
+    model = make_pipeline(StandardScaler(), clf)
+    cv_scores = cross_val_score(model, X, y, cv=5, scoring="accuracy")
+    scores_dict[model_name] = cv_scores
+    print(
+        f"{model_name} -> "
+        f"Accuracy={cv_scores.mean():.4f}, "
+        f"Std={cv_scores.std():.4f}"
+    )
+
+=== 交叉驗證結果 ===
+
+LR：5 次分數 = [0.9825 0.9737 0.9825 0.9737 0.9912]
+平均 = 0.9807
+標準差 = 0.0065
+
+KNN：5 次分數 = [0.9649 0.9561 0.9825 0.9561 0.9646]
+平均 = 0.9649
+標準差 = 0.0096
+
+SVM：5 次分數 = [0.9737 0.9561 1.0000 0.9649 0.9735]
+平均 = 0.9736
+標準差 = 0.0147
+
+DT：5 次分數 = [0.9123 0.9035 0.9298 0.9561 0.8850]
+平均 = 0.9173
+標準差 = 0.0242
+
+=== 最佳模型 ===
+
+最佳分類器：Logistic Regression
+
+平均準確率：98.07%
+
+結果分析：
+
+從五折交叉驗證結果可以發現，Logistic Regression 具有最高的平均準確率，且標準差相對較低，代表模型不僅表現良好，也具有較佳的穩定性。SVM 的整體表現也相當優秀，但準確率略低於 Logistic Regression。KNN 的結果較為穩定，但平均準確率稍低。Decision Tree 雖然訓練速度快，但在不同資料分割下波動較大，因此整體表現不如其他模型。綜合比較後，本次實驗選擇 Logistic Regression 作為最佳模型。

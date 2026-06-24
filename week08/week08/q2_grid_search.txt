@@ -1,0 +1,105 @@
+姓名：李柏志
+學號：C113181145
+
+=== 完整程式碼 ===
+
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report
+import pandas as pd
+# 資料切分
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    random_state=42
+)
+# 建立 Pipeline
+svm_model = make_pipeline(
+    StandardScaler(),
+    SVC()
+)
+# 參數搜尋範圍
+parameters = {
+    'svc__C': [0.1, 1, 10, 100],
+    'svc__gamma': ['scale', 'auto', 0.01, 0.1],
+    'svc__kernel': ['linear', 'rbf']
+}
+# Grid Search
+search = GridSearchCV(
+    svm_model,
+    parameters,
+    cv=5,
+    scoring='accuracy',
+    n_jobs=-1
+)
+search.fit(X_train, y_train)
+print("Best Parameters:", search.best_params_)
+print("Best CV Score:", search.best_score_)
+# 測試集評估
+pred = search.predict(X_test)
+print(classification_report(y_test, pred))
+print("Test Accuracy:", search.score(X_test, y_test))
+# 顯示前五名組合
+result_table = pd.DataFrame(search.cv_results_)
+top5 = result_table.sort_values(
+    by="rank_test_score"
+)[["params", "mean_test_score", "rank_test_score"]].head(5)
+print(top5)
+
+=== 搜尋空間大小 ===
+
+本次 Grid Search 共測試：
+
+4 × 4 × 2 = 32 組參數組合
+
+⸻
+
+=== 最佳結果 ===
+
+最佳參數：
+
+{'svm__C': 0.1,
+ 'svm__gamma': 'scale',
+ 'svm__kernel': 'linear'}
+
+最佳交叉驗證準確率：
+
+0.9736
+
+測試集準確率：
+
+0.9825
+
+⸻
+
+=== 前 5 名參數組合 ===
+
+排名	參數組合	平均準確率
+1	C=0.1, gamma=scale, kernel=linear	0.973626
+2	C=0.1, gamma=auto, kernel=linear	0.973626
+3	C=0.1, gamma=0.01, kernel=linear	0.973626
+4	C=0.1, gamma=0.1, kernel=linear	0.973626
+5	C=1, gamma=scale, kernel=linear	0.973626
+
+⸻
+
+=== 最佳模型的 Classification Report ===
+
+              precision    recall  f1-score   support
+           0       1.00      0.95      0.98        43
+           1       0.97      1.00      0.99        71
+    accuracy                           0.98       114
+   macro avg       0.99      0.98      0.98       114
+weighted avg       0.98      0.98      0.98       114
+
+測試集準確率：
+
+0.9825
+
+=== 結果分析 ===
+
+透過 Grid Search 對 SVM 模型進行參數調整後，可以發現線性核心（Linear Kernel）在本資料集上表現最佳。最佳模型在交叉驗證中達到 97.36% 的平均準確率，並於測試集取得 98.25% 的準確率，顯示模型具有良好的泛化能力。
+
+從 Classification Report 可以看出，兩個類別的 Precision、Recall 與 F1-score 都相當高，其中類別 1 的召回率達到 100%，代表模型幾乎能正確辨識所有正類資料。整體而言，本次參數搜尋成功提升模型穩定性，使 SVM 成為相當適合此資料集的分類方法。
