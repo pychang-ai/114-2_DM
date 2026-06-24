@@ -1,0 +1,154 @@
+姓名:朱智遠
+學號：C113181116
+
+=== 完整程式碼 ===
+（貼上你撰寫的完整 Python 程式碼）
+from sklearn.model_selection import cross_val_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+
+models = {
+    'LogisticRegression': LogisticRegression(max_iter=5000),
+    'KNN': KNeighborsClassifier(),
+    'SVM': SVC(),
+    'DecisionTree': DecisionTreeClassifier(random_state=42)
+}
+results = {}
+for name, model in models.items():
+    pipe = Pipeline([('scaler', StandardScaler()), ('clf', model)])
+    scores = cross_val_score(pipe, X, y, cv=5, scoring='accuracy')
+    results[name] = scores
+    print(f"{name}：{scores}  平均={scores.mean():.4f}  標準差={scores.std():.4f}")
+=== 交叉驗證結果 ===
+LogisticRegression：5 次分數=[0.98245614 0.98245614 0.97368421 0.97368421 0.99115044]  平均=0.9807  標準差=0.0065
+=== 最佳模型 ===
+最佳模型：LogisticRegression
+平均準確率：0.9807
+
+
+*****************************q2******************************
+=== 完整程式碼 ===
+(貼上你撰寫的完整 Python 程式碼)
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+pipe = Pipeline([
+    ('scaler', StandardScaler()),
+    ('svm', SVC())
+])
+
+param_grid = {
+    'svm__C': [0.1, 1, 10, 100],
+    'svm__gamma': ['scale', 'auto', 0.01, 0.1],
+    'svm__kernel': ['rbf', 'linear']
+}
+
+grid = GridSearchCV(pipe, param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+grid.fit(X_train, y_train)
+
+print(f"最佳參數 : {grid.best_params_}")
+print(f"最佳交叉驗證分數 : {grid.best_score_:.4f}")
+
+# Predict on test set with best model and print Classification Report
+y_pred = grid.predict(X_test)
+print("測試集分類報告 : \n")
+print(classification_report(y_test, y_pred))
+
+print(f"測試集準確率 : {grid.score(X_test, y_test):.4f}")
+
+# 前 5 名
+results_df = pd.DataFrame(grid.cv_results_)
+top5 = results_df.nsmallest(5, 'rank_test_score')[['params', 'mean_test_score', 'rank_test_score']]
+print("\n前5名參數組合 : ")
+print(top5)
+
+=== 搜尋空間大小 ===
+總共測試了幾種組合 : 32
+
+=== 最佳結果 ===
+最佳參數 : {'svm__C': 0.1, 'svm__gamma': 'scale', 'svm__kernel': 'linear'}
+最佳交叉驗證分數 : 0.9736
+測試集準確率 : 0.9825
+
+=== 前 5 名參數組合 ===
+1. {'svm__C': 0.1, 'svm__gamma': 'scale', 'svm__kernel': 'linear'} - 0.973626
+2. {'svm__C': 0.1, 'svm__gamma': 'auto', 'svm__kernel': 'linear'} - 0.973626
+3. {'svm__C': 0.1, 'svm__gamma': 0.01, 'svm__kernel': 'linear'} - 0.973626
+4. {'svm__C': 0.1, 'svm__gamma': 0.1, 'svm__kernel': 'linear'} - 0.973626
+5. {'svm__C': 1, 'svm__gamma': 'scale', 'svm__kernel': 'linear'} - 0.973626
+
+=== 最佳模型的 Classification Report ===
+(貼上分類報告)
+測試集分類報告 :
+
+              precision    recall  f1-score   support
+
+           0       1.00      0.95      0.98        43
+           1       0.97      1.00      0.99        71
+
+    accuracy                           0.98       114
+   macro avg       0.99      0.98      0.98       114
+weighted avg       0.98      0.98      0.98       114
+
+測試集準確率 : 0.9825
+
+*****************************q3******************************
+
+
+Q1：為什麼交叉驗證比單次 train_test_split 更能反映模型的真實效能？
+    如果只做一次 train_test_split，可能會遇到什麼問題？
+
+
+A1：  
+1. 為什麼交叉驗證（Cross-Validation）更能反映真實效能？  
+交叉驗證（例如常見的 K 折交叉驗證）將數據分成 K 份，交替使用每一份作為測試集，其餘 K-1 份作為訓練集，最終對 K 次評估結果取平均值。其核心優勢在於：每筆數據均被用於訓練和測試過程中。
+相較於單次劃分，交叉驗證能更全面地評估模型在不同數據子集上的穩定性，大幅減少因「數據劃分運氣」造成的偏差，提供更客觀且變異度更低的效能估計。
+
+2. 如果只做一次 train_test_split 可能產生的問題：  
+(a) 樣本代表性不足（劃分偏誤）：若數據劃分運氣不佳，測試集可能包含異常容易或困難的樣本，導致評估結果過高或過低，無法準確反映模型的泛化能力。  
+(b) 資料浪費：部分寶貴的數據會被固定分配到測試集中，使得訓練集無法利用這些數據的特徵與模式，尤其在小型數據集上會放大這一缺點，影響模型性能。
+
+
+Q2：GridSearchCV 中的 cv=5 代表什麼意思？
+    如果參數搜尋空間有 4 個 C 值 × 4 個 gamma 值 × 2 個 kernel，
+    加上 cv=5，總共需要訓練幾次模型？請列出計算過程。
+
+
+A2：  
+1. cv=5 代表什麼意思？  
+在 GridSearchCV 中，cv=5 表示使用 5 折交叉驗證（5-Fold Cross-Validation）。演算法對每一組超參數組合將訓練數據分成 5 等份，進行 5 輪訓練與驗證（每次選取 4 份做訓練，1 份進行驗證）。最後統計這 5 輪驗證的平均分數，以評估該組超參數的優劣。  
+
+2. 訓練次數計算過程：  
+- **步驟一：超參數組合總數計算**  
+假設超參數搜尋空間有 4 個 C 值 × 4 個 γ 值 × 2 個 kernel  
+總組合數 = 4 × 4 × 2 = 32 組  
+
+- **步驟二：交叉驗證折數影響**  
+基於 cv=5，每組超參數都需要進行 5 次模型訓練  
+總訓練次數 = 32 組 × 5 次 = 160 次  
+
+結論：總共需要訓練模型 160 次。
+
+
+Q3：SVM 的參數 C 控制什麼？C 值很大和很小分別會造成什麼效果？
+    這跟過擬合/欠擬合有什麼關係？
+
+A3：  
+在支持向量機（SVM）中，參數 C 是一項正則化因子，用來平衡「邊界最大化」與「容忍分類錯誤」之間的權重。  
+1. 當 C 值很大時：  
+- **效果**：對分類錯誤的容忍度極低，模型會優先追求將所有訓練樣本正確分類，分類邊界變得較狹窄、嚴格。  
+- **模型現象**：可能發生過擬合（Overfitting），模型對訓練數據擁有極高精度，但容易受到噪聲或離群點影響，導致泛化能力欠佳，在測試集上的表現不穩定或較差。  
+
+2. 當 C 值很小時：  
+- **效果**：對分類錯誤的容忍度提高，傾向於獲得較大的邊界，即使會犧牲部分樣本的正確性。  
+- **模型現象**：可能導致欠擬合（Underfitting），模型過於簡單，無法從訓練數據中學習到足夠的決策特徵，導致無論在訓練集還是測試集上的表現都不理想。
