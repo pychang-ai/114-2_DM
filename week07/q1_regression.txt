@@ -1,0 +1,91 @@
+姓名：郭柏辰
+學號：C113181121
+
+=== 完整程式碼 ===
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+import numpy as np
+
+# 1. 簡單線性迴歸
+simple_model = LinearRegression()
+simple_model.fit(X_train_s, y_train_s)
+
+# 預測與評估
+y_train_pred_s = simple_model.predict(X_train_s)
+y_test_pred_s = simple_model.predict(X_test_s)
+
+slope = simple_model.coef_[0]
+intercept = simple_model.intercept_
+r2_train_s = r2_score(y_train_s, y_train_pred_s)
+r2_test_s = r2_score(y_test_s, y_test_pred_s)
+rmse_train_s = np.sqrt(mean_squared_error(y_train_s, y_train_pred_s))
+rmse_test_s = np.sqrt(mean_squared_error(y_test_s, y_test_pred_s))
+
+print("=== 簡單迴歸結果 ===")
+print(f"使用特徵：Engine_Power_kW")
+print(f"斜率：{slope:.4f}   截距：{intercept:.4f}")
+print(f"迴歸公式：Cost = {slope:.4f} × Engine_Power_kW + {intercept:.4f}")
+print(f"訓練 R²：{r2_train_s:.4f}   測試 R²：{r2_test_s:.4f}")
+print(f"訓練 RMSE：{rmse_train_s:.2f} 測試 RMSE：{rmse_test_s:.2f}")
+
+# 2. 多元線性迴歸
+multi_model = LinearRegression()
+multi_model.fit(X_train_m, y_train_m)
+
+# 預測與評估
+y_train_pred_m = multi_model.predict(X_train_m)
+y_test_pred_m = multi_model.predict(X_test_m)
+
+r2_train_m = r2_score(y_train_m, y_train_pred_m)
+r2_test_m = r2_score(y_test_m, y_test_pred_m)
+rmse_train_m = np.sqrt(mean_squared_error(y_train_m, y_train_pred_m))
+rmse_test_m = np.sqrt(mean_squared_error(y_test_m, y_test_pred_m))
+
+print("\n=== 多元迴歸結果 ===")
+print("各特徵迴歸係數：")
+for feature, coef in zip(X_multi.columns, multi_model.coef_):
+    print(f"  {feature}: {coef:.4f}")
+
+print(f"訓練 R²：{r2_train_m:.4f}   測試 R²：{r2_test_m:.4f}")
+print(f"訓練 RMSE：{rmse_train_m:.2f} 測試 RMSE：{rmse_test_m:.2f}")
+
+=== 簡單迴歸結果 ===
+使用特徵：Engine_Power_kW
+斜率：-2.9053   截距：259886.6312
+迴歸公式：Cost = -2.9053 × Engine_Power_kW + 259886.6312
+訓練 R²：0.0002   測試 R²：-0.0003
+訓練 RMSE：140453.26 測試 RMSE：142448.04
+
+=== 多元迴歸結果 ===
+各特徵迴歸係數：（列出 5 個）
+  Engine_Power_kW: -2.8017
+  Cargo_Weight_tons: -14.9563
+  Distance_Traveled_nm: -0.8027
+  Speed_Over_Ground_knots: -1021.7892
+  Draft_meters: 200.4663
+訓練 R²：0.0047   測試 R²：-0.0074
+訓練 RMSE：140138.09 測試 RMSE：142953.48
+
+=== 簡單 vs 多元比較 ===
+R² 差了多少？RMSE 差了多少？為什麼？
+哪個特徵對營運成本的影響最大？
+
+1.R² 與 RMSE 差了多少？為什麼？
+R² 的差異：
+訓練集 R² 從簡單迴歸的 0.0002 微幅上升到多元迴歸的 0.0047（僅增加了 0.0045）。
+測試集 R² 則從簡單迴歸的 -0.0003 進一步惡化到多元迴歸的 -0.0074。
+RMSE 的差異：
+訓練集 RMSE 從 140,453.26 稍微下降到 140,138.09（減少了約 315）。
+測試集 RMSE 則從 142,448.04 上升到 142,953.48（增加了約 505）。
+
+為什麼會這樣？
+特徵與目標變數幾乎毫無線性關係： 無論是簡單還是多元迴歸，模型的 R² 都接近於 0 甚至為負數
+（測試集為負數代表模型的預測表現比直接抓取平均值當預測還要糟糕）。這說明現有的 5 個特徵
+（主機功率、載貨量、航行距離、對地航速、吃水）與「營運成本（Cost）」之間不存在顯著的線性關係，或者資料本身包含了極大的雜訊。
+模型發生了過擬合（Overfitting）：
+當模型從簡單迴歸變成多元迴歸時，雖然加入更多特徵讓模型在「訓練集」上能勉強硬逼出多一點點的解釋能力
+（訓練 R² 微增、RMSE 微降），但因為這些特徵無法真正泛化到未知的資料，導致在「測試集」上的表現全面倒退（測試 R² 更負、測試 RMSE 更高）。
+
+2. 哪個特徵對營運成本的影響最大？
+在目前的多元迴歸結果中，直接從迴歸係數（Coefficients）的絕對值來看：
+影響最大的是 Speed_Over_Ground_knots（對地航速），係數高達 -1021.7892。

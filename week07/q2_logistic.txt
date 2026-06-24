@@ -1,0 +1,88 @@
+姓名：郭柏辰
+學號：C113181121
+
+=== 完整程式碼 ===
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report, roc_auc_score, confusion_matrix
+import pandas as pd
+import numpy as np
+
+# 1. 資料準備與切分
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 2. 標準化
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# 3. 訓練 Logistic Regression
+log_reg = LogisticRegression()
+log_reg.fit(X_train_scaled, y_train)
+
+# 4. 預測
+y_pred = log_reg.predict(X_test_scaled)
+y_prob = log_reg.predict_proba(X_test_scaled)[:, 1]
+
+# 5. 輸出結果
+print("=== 各特徵迴歸係數 ===")
+coef_df = pd.DataFrame({'Feature': features, 'Coefficient': log_reg.coef_[0]})
+for _, row in coef_df.iterrows():
+    print(f"{row['Feature'] + ':':<26} {row['Coefficient']:.4f}")
+
+# 找出影響最大的特徵 (絕對值最大)
+max_coef_idx = np.argmax(np.abs(log_reg.coef_[0]))
+max_feature = features[max_coef_idx]
+max_val = log_reg.coef_[0][max_coef_idx]
+
+print("\n=== 影響最大的特徵 ===")
+print(f"特徵名稱：{max_feature}")
+
+print("\n=== 分類報告 ===")
+print(classification_report(y_test, y_pred))
+
+print(f"=== AUC 值 ===")
+print(f"{roc_auc_score(y_test, y_prob):.4f}")
+
+# 混淆矩陣
+tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+print("\n=== 混淆矩陣判讀 ===")
+print(f"TP：{tp}  FP：{fp}")
+print(f"FN：{fn}  TN：{tn}")
+
+=== 各特徵迴歸係數 ===
+Engine_Power_kW:          0.0271
+Speed_Over_Ground_knots:  0.0626
+Distance_Traveled_nm:     0.0060
+Draft_meters:             -0.0559
+Cargo_Weight_tons:        -0.0317
+Turnaround_Time_hours:    0.0098
+
+=== 影響最大的特徵 ===
+特徵名稱：Speed_Over_Ground_knots
+原因：
+在資料經過 StandardScaler 標準化（前置處理） 之後，所有特徵的單位與數值範圍已被消除，此時迴歸係數的絕對值越大，代表該特徵對模型的預測影響力（權重）越高。
+在這裡，Speed_Over_Ground_knots 的係數絕對值為 0.0626，在所有特徵中最高。其正值代表當對地航速越高時，模型將其預測為類別 1（例如：高成本、或需要維護）的機率就會隨之增加。
+
+=== 分類報告 ===
+（貼上 classification_report 輸出）
+              precision    recall  f1-score   support
+
+           0       0.65      1.00      0.79       339
+           1       0.00      0.00      0.00       181
+
+    accuracy                           0.65       520
+   macro avg       0.33      0.50      0.39       520
+weighted avg       0.43      0.65      0.51       520
+
+=== AUC 值 ===
+0.4789
+
+=== 混淆矩陣判讀 ===
+TP：0  FP：0
+FN：181  TN：339
+在船舶維護預測中，FN（漏報 Critical）比 FP（誤報 Critical）更嚴重，因為：
+* FN（False Negative，漏報）： 代表船舶「實際上需要維護，但模型卻預測正常」。這會導致船隻在帶著潛在故障的風險下繼續出航，可能在遠洋航行中突發主機失效、甚至釀成嚴重的海難或重大機械損壞。這不僅會帶來難以估計的高昂緊急救援與維修成本，更會威脅到船員的生命安全。
+FP（False Positive，誤報）： 代表船舶「實際上正常，但模型卻預測需要維護」。這頂多導致工作人員多做一次預防性檢查，雖然浪費了少許人力與時間成本，但至少能保證船舶在海上的絕對安全。
+結論：在船舶與航運安全領域，「寧可錯殺一百（高 FP），不可漏放一個（高 FN）」。目前模型產生高達 181 筆 FN，是完全無法投入實際營運的。
