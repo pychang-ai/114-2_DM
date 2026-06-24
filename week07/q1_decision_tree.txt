@@ -1,0 +1,117 @@
+姓名：郭晉銘
+學號：C113181144
+
+=== 完整程式碼 ===
+（貼上你撰寫的完整 Python 程式碼）
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_wine
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+
+# ==========================================
+# 1. 載入 wine 資料集，切割資料
+# ==========================================
+wine = load_wine()
+X, y = wine.data, wine.target
+feature_names = wine.feature_names
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# ==========================================
+# 2 & 3. 訓練不同 max_depth 的決策樹並記錄準確率
+# ==========================================
+depth_options = [2, 3, 5, 7, 10, None]
+results = {}
+
+for d in depth_options:
+    dt = DecisionTreeClassifier(max_depth=d, random_state=42)
+    dt.fit(X_train, y_train)
+    
+    train_acc = dt.score(X_train, y_train)
+    test_acc = dt.score(X_test, y_test)
+    
+    # 記錄結果
+    results[str(d)] = {'train': train_acc, 'test': test_acc}
+
+# ==========================================
+# 印出文字版結果（可直接複製填空）
+# ==========================================
+print("=== 不同 max_depth 的準確率比較 ===")
+for d in depth_options:
+    res = results[str(d)]
+    print(f"max_depth={d}：訓練={res['train']:.4f}  測試={res['test']:.4f}")
+print("=" * 35 + "\n")
+
+# ==========================================
+# 4. 繪製折線圖
+# ==========================================
+x_labels = [str(d) for d in depth_options]
+train_scores = [results[lbl]['train'] for lbl in x_labels]
+test_scores = [results[lbl]['test'] for lbl in x_labels]
+
+plt.figure(figsize=(9, 5))
+plt.plot(x_labels, train_scores, label='Train Accuracy', marker='o', color='blue', linewidth=2)
+plt.plot(x_labels, test_scores, label='Test Accuracy', marker='s', color='orange', linewidth=2)
+plt.xlabel('max_depth')
+plt.ylabel('Accuracy')
+plt.title('Accuracy vs max_depth (Wine Dataset)')
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.5)
+plt.show()
+
+# ==========================================
+# 5. 用最佳 max_depth=3 印出特徵重要性排名
+# ==========================================
+best_dt = DecisionTreeClassifier(max_depth=3, random_state=42)
+best_dt.fit(X_train, y_train)
+
+importances = best_dt.feature_importances_
+indices = np.argsort(importances)[::-1]
+
+print("=== 特徵重要性排名（前 5 名） ===")
+for i in range(5):
+    idx = indices[i]
+    print(f"第 {i+1} 名: {feature_names[idx]} ({importances[idx]:.4f})")
+print("=" * 30 + "\n")
+
+# ==========================================
+# 6. 視覺化決策樹 (max_depth=3)
+# ==========================================
+plt.figure(figsize=(16, 8))
+plot_tree(
+    best_dt,
+    feature_names=feature_names,
+    class_names=wine.target_names,
+    filled=True,
+    rounded=True,
+    fontsize=11
+)
+plt.title("Decision Tree Structure (max_depth=3)", fontsize=14)
+plt.show()
+
+=== 不同 max_depth 的準確率比較 ===
+max_depth=2：訓練=0.9435  測試=0.8704
+max_depth=3：訓練=0.9919  測試=0.9630
+max_depth=5：訓練=1.0000  測試=0.9630
+max_depth=7：訓練=1.0000  測試=0.9630
+max_depth=10：訓練=1.0000  測試=0.9630
+max_depth=None：訓練=1.0000  測試=0.9630
+
+=== 最佳 max_depth ===
+最佳 max_depth：3
+測試集準確率：96.30% (0.9630)
+
+=== 特徵重要性前 5 名 ===
+1. 第 1 名: flavanoids (0.4236)
+2. 第 2 名: color_intensity (0.4203)
+3. 第 3 名: proline (0.1317)
+4. 第 4 名: ash (0.0245)
+5. 第 5 名: od280/od315_of_diluted_wines (0.0000)
+
+=== 過擬合觀察 ===
+（從折線圖觀察，說明 max_depth 太大或不限制時，訓練與測試準確率的差距變化）
+從折線圖中可以觀察到，當max_depth太大或不限制（None）時，訓練準確率與測試準確率的差距會明顯擴大：
+訓練準確率：會持續上升並達到 100%。因為樹深沒有限制，模型可以完美切分並記住訓練集中的所有數據與噪訊。
+測試準確率：在達到特定深度後便停滯不前。
+結論：兩者差距拉大，反映了典型的過擬合現象。這說明模型過度擬合了訓練數據，但對未知新數據的泛化能力並未隨之提升。
