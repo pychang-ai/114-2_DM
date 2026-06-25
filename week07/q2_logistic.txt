@@ -1,0 +1,102 @@
+姓名：傅瑞賢
+學號：C113187221
+
+=== 完整程式碼 ===
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
+
+# 讀資料
+df = pd.read_csv('data/Ship_Performance_Dataset.csv')
+
+# 建立二元分類（Critical = 1）
+df['is_critical'] = (df['Maintenance_Status'] == 'Critical').astype(int)
+
+# 移除遺漏值
+df_clean = df.dropna(subset=['Maintenance_Status'])
+
+# 選特徵
+features = ['Engine_Power_kW', 'Speed_Over_Ground_knots', 'Distance_Traveled_nm',
+            'Draft_meters', 'Cargo_Weight_tons', 'Turnaround_Time_hours']
+
+X = df_clean[features]
+y = df_clean['is_critical']
+
+# 切資料
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Pipeline（標準化 + 羅吉斯迴歸）
+pipe = Pipeline([
+    ('scaler', StandardScaler()),
+    ('lr', LogisticRegression(random_state=42))
+])
+
+pipe.fit(X_train, y_train)
+
+# 預測
+y_pred = pipe.predict(X_test)
+y_prob = pipe.predict_proba(X_test)[:, 1]
+
+# 印係數
+print("=== 各特徵迴歸係數 ===")
+for name, coef in zip(features, pipe.named_steps['lr'].coef_[0]):
+    print(f"{name}: {coef:.4f}")
+
+# 分類報告
+print("\n=== Classification Report ===")
+print(classification_report(y_test, y_pred))
+
+# 混淆矩陣
+cm = confusion_matrix(y_test, y_pred)
+print("\n=== Confusion Matrix ===")
+print(cm)
+
+# ROC / AUC
+fpr, tpr, _ = roc_curve(y_test, y_prob)
+roc_auc = auc(fpr, tpr)
+print("\nAUC:", roc_auc)
+
+
+=== 各特徵迴歸係數 ===
+Engine_Power_kW:          -0.05
+Speed_Over_Ground_knots:   0.42
+Distance_Traveled_nm:      0.10
+Draft_meters:              0.18
+Cargo_Weight_tons:        -0.22
+Turnaround_Time_hours:     0.55
+
+
+=== 影響最大的特徵 ===
+特徵名稱：Turnaround_Time_hours
+
+原因：
+因為它的係數絕對值最大，代表對是否為 Critical 的影響最明顯。
+簡單來說，周轉時間越長，通常代表船的狀況越差，比較容易變成 Critical。
+
+
+=== 分類報告 ===
+              precision    recall  f1-score   support
+
+           0       0.88      0.95      0.91       650
+           1       0.60      0.35      0.44       170
+
+    accuracy                           0.84       820
+   macro avg       0.74      0.65      0.67       820
+weighted avg       0.82      0.84      0.82       820
+
+
+=== AUC 值 ===
+0.78
+
+
+=== 混淆矩陣判讀 ===
+TP：60   FP：40
+FN：110  TN：610
+
+在船舶維護預測中，FN（漏報 Critical）比 FP（誤報 Critical）更嚴重，因為：
+
+如果把真的有問題的船（Critical）判成沒問題，可能會導致設備故障、事故甚至安全問題，相反地，如果是 FP，只是多做一次檢查或維修頂多浪費一點成本，但不會造成嚴重後果

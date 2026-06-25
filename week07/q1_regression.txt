@@ -1,0 +1,90 @@
+姓名：傅瑞賢
+學號：C113187221
+
+
+=== 完整程式碼 ===
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score, mean_squared_error
+
+# 讀取資料
+df = pd.read_csv('data/Ship_Performance_Dataset.csv')
+
+# === 簡單迴歸 ===
+X = df[['Engine_Power_kW']]
+y = df['Operational_Cost_USD']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+y_pred_train = model.predict(X_train)
+y_pred_test = model.predict(X_test)
+
+print("=== 簡單迴歸 ===")
+print("斜率:", model.coef_[0])
+print("截距:", model.intercept_)
+print("Train R2:", r2_score(y_train, y_pred_train))
+print("Test R2:", r2_score(y_test, y_pred_test))
+print("Train RMSE:", np.sqrt(mean_squared_error(y_train, y_pred_train)))
+print("Test RMSE:", np.sqrt(mean_squared_error(y_test, y_pred_test)))
+
+# === 多元迴歸 ===
+features = ['Engine_Power_kW','Cargo_Weight_tons','Distance_Traveled_nm',
+            'Speed_Over_Ground_knots','Draft_meters']
+
+X = df[features]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+y_pred_train = model.predict(X_train)
+y_pred_test = model.predict(X_test)
+
+print("\n=== 多元迴歸 ===")
+for name, coef in zip(features, model.coef_):
+    print(name, coef)
+
+print("Train R2:", r2_score(y_train, y_pred_train))
+print("Test R2:", r2_score(y_test, y_pred_test))
+print("Train RMSE:", np.sqrt(mean_squared_error(y_train, y_pred_train)))
+print("Test RMSE:", np.sqrt(mean_squared_error(y_test, y_pred_test)))
+
+
+=== 簡單迴歸結果 ===
+使用特徵：Engine_Power_kW
+斜率：-2.2418   截距：259230.9553
+迴歸公式：Cost = -2.24 × Engine_Power_kW + 259230.96
+訓練 R²：0.0001   測試 R²：0.0002
+訓練 RMSE：140112.93 測試 RMSE：142568.50
+
+
+=== 多元迴歸結果 ===
+各特徵迴歸係數：
+Engine_Power_kW：-2.1532
+Cargo_Weight_tons：-16.7312
+Distance_Traveled_nm：-0.5261
+Speed_Over_Ground_knots：-994.4554
+Draft_meters：412.2606
+
+訓練 R²：0.0055   測試 R²：-0.0063
+訓練 RMSE：139737.27 測試 RMSE：143029.25
+
+
+=== 簡單 vs 多元比較 ===
+R² 差了多少？
+大概只多了 0.005 左右，幾乎沒差
+
+RMSE 差了多少？
+訓練的 RMSE 稍微變小，但測試的 RMSE 變大，代表模型沒有變好。
+
+為什麼？
+代表這些變數跟營運成本之間的線性關係很弱，就算多加幾個特徵模型還是抓不到規律，所以預測效果沒有明顯提升
+
+哪個特徵對營運成本的影響最大？
+從係數來看是 Speed_Over_Ground_knots 影響最大，因為係數絕對值最大

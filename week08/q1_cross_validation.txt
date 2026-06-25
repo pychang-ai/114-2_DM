@@ -1,0 +1,36 @@
+姓名：傅瑞賢
+學號：C113187221
+
+=== 完整程式碼 ===
+（貼上你撰寫的完整 Python 程式碼）
+from sklearn.model_selection import cross_val_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+
+models = {
+    'LogisticRegression': LogisticRegression(max_iter=5000),
+    'KNN': KNeighborsClassifier(),
+    'SVM': SVC(),
+    'DecisionTree': DecisionTreeClassifier(random_state=42)
+}
+
+results = {}
+for name, model in models.items():
+    pipe = Pipeline([('scaler', StandardScaler()), ('clf', model)])
+    scores = cross_val_score(pipe, X, y, cv=5, scoring='accuracy')
+    results[name] = scores
+    print(f"{name}：{scores}  平均={scores.mean():.4f}  標準差={scores.std():.4f}")
+
+=== 交叉驗證結果 ===
+LogisticRegression：5 次分數=[0.98245614 0.98245614 0.97368421 0.97368421 0.99115044]  平均=0.9807  標準差=0.0065
+KNN：5 次分數=[0.96491228 0.95614035 0.98245614 0.95614035 0.96460177]  平均=0.9649  標準差=0.0096
+SVM：5 次分數=[0.97368421 0.95614035 1.         0.96491228 0.97345133]  平均=0.9736  標準差=0.0147
+DecisionTree：5 次分數=[0.9122807  0.90350877 0.92982456 0.95614035 0.88495575]  平均=0.9173  標準差=0.0242
+
+=== 最佳模型 ===
+最佳模型：LogisticRegression
+平均準確率：0.9807

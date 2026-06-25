@@ -1,0 +1,73 @@
+姓名：傅瑞賢
+學號：C113187221
+
+=== 完整程式碼 ===
+（貼上你撰寫的完整 Python 程式碼）
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+pipe = Pipeline([
+    ('scaler', StandardScaler()),
+    ('svm', SVC())
+])
+
+param_grid = {
+    'svm__C': [0.1, 1, 10, 100],
+    'svm__gamma': ['scale', 'auto', 0.01, 0.1],
+    'svm__kernel': ['rbf', 'linear']
+}
+
+grid = GridSearchCV(pipe, param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+grid.fit(X_train, y_train)
+
+print(f"最佳參數：{grid.best_params_}")
+print(f"最佳交叉驗證分數：{grid.best_score_:.4f}")
+
+# Predict on test set with best model and print Classification Report
+y_pred = grid.predict(X_test)
+print("測試集分類報告：\n")
+print(classification_report(y_test, y_pred))
+
+print(f"測試集準確率：{grid.score(X_test, y_test):.4f}")
+
+# 前 5 名
+results_df = pd.DataFrame(grid.cv_results_)
+top5 = results_df.nsmallest(5, 'rank_test_score')[['params', 'mean_test_score', 'rank_test_score']]
+print("\n前5名參數組合：")
+print(top5)
+
+=== 搜尋空間大小 ===
+總共測試了幾種組合：32
+
+=== 最佳結果 ===
+最佳參數：{'svm__C': 0.1, 'svm__gamma': 'scale', 'svm__kernel': 'linear'}
+最佳交叉驗證分數：0.9736
+測試集準確率：0.9825
+
+=== 前 5 名參數組合 ===
+1. {'svm__C': 0.1, 'svm__gamma': 'scale', 'svm__kernel': 'linear'} - 0.973626
+2. {'svm__C': 0.1, 'svm__gamma': 'auto', 'svm__kernel': 'linear'} - 0.973626
+3. {'svm__C': 0.1, 'svm__gamma': 0.01, 'svm__kernel': 'linear'} - 0.973626
+4. {'svm__C': 0.1, 'svm__gamma': 0.1, 'svm__kernel': 'linear'} - 0.973626
+5. {'svm__C': 1, 'svm__gamma': 'scale', 'svm__kernel': 'linear'} - 0.973626
+
+=== 最佳模型的 Classification Report ===
+（貼上分類報告）
+測試集分類報告：
+
+              precision    recall  f1-score   support
+
+           0       1.00      0.95      0.98        43
+           1       0.97      1.00      0.99        71
+
+    accuracy                           0.98       114
+   macro avg       0.99      0.98      0.98       114
+weighted avg       0.98      0.98      0.98       114
+
+測試集準確率：0.9825
