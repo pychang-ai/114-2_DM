@@ -1,0 +1,114 @@
+姓名：陳芊昀
+學號：c113181143
+
+=== 完整程式碼 ===
+# q2_grid_search.py
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report
+import pandas as pd
+import numpy as np
+
+# 載入資料
+data = load_breast_cancer()
+X = pd.DataFrame(data.data, columns=data.feature_names)
+y = data.target
+
+# 1. 切割資料
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+print(f"訓練集大小：{X_train.shape}")
+print(f"測試集大小：{X_test.shape}\n")
+
+# 2. 建立 Pipeline
+pipe = Pipeline([
+    ('scaler', StandardScaler()),
+    ('svm', SVC(random_state=42))
+])
+
+# 3. 定義參數搜尋空間
+param_grid = {
+    'svm__C': [0.1, 1, 10, 100],
+    'svm__gamma': ['scale', 'auto', 0.01, 0.1],
+    'svm__kernel': ['rbf', 'linear']
+}
+
+# 4. 使用 GridSearchCV 進行搜尋
+grid = GridSearchCV(
+    pipe, 
+    param_grid, 
+    cv=5, 
+    scoring='accuracy', 
+    n_jobs=-1,
+    verbose=1
+)
+
+print("開始網格搜尋...")
+grid.fit(X_train, y_train)
+
+# 計算總共測試了幾種組合
+n_params = len(param_grid['svm__C']) * len(param_grid['svm__gamma']) * len(param_grid['svm__kernel'])
+n_cv = 5
+total_fits = n_params * n_cv
+
+print(f"\n=== 搜尋空間大小 ===")
+print(f"參數組合數：{n_params} 種")
+print(f"總共需要訓練的模型數：{total_fits} 次 ({n_params} 組合 × {n_cv} 折)")
+
+# 5. 印出最佳參數組合與分數
+print(f"\n=== 最佳結果 ===")
+print(f"最佳參數：{grid.best_params_}")
+print(f"最佳交叉驗證分數：{grid.best_score_:.4f}")
+
+# 測試集評估
+test_accuracy = grid.score(X_test, y_test)
+print(f"測試集準確率：{test_accuracy:.4f}")
+
+# 6. 最佳模型預測與 Classification Report
+y_pred = grid.best_estimator_.predict(X_test)
+print(f"\n=== 最佳模型的 Classification Report ===")
+print(classification_report(y_test, y_pred, target_names=data.target_names))
+
+# 7. 前 5 名的參數組合與分數
+results_df = pd.DataFrame(grid.cv_results_)
+top5 = results_df.nsmallest(5, 'rank_test_score')[
+    ['params', 'mean_test_score', 'rank_test_score']
+]
+
+print(f"\n=== 前 5 名參數組合 ===")
+for i, (idx, row) in enumerate(top5.iterrows(), 1):
+    print(f"{i}. {row['params']} - 分數: {row['mean_test_score']:.4f}")
+
+# 額外資訊：顯示所有結果摘要
+print(f"\n=== 其他資訊 ===")
+print(f"最差分數：{results_df['mean_test_score'].min():.4f}")
+print(f"分數範圍：{results_df['mean_test_score'].max() - results_df['mean_test_score'].min():.4f}")
+
+=== 搜尋空間大小 ===
+總共測試了幾種組合：32 種
+
+=== 最佳結果 ===
+最佳參數：{'svm__C': 10, 'svm__gamma': 'scale', 'svm__kernel': 'rbf'}
+最佳交叉驗證分數：0.9736
+測試集準確率：0.9737
+
+=== 前 5 名參數組合 ===
+1. {'svm__C': 10, 'svm__gamma': 'scale', 'svm__kernel': 'rbf'} - 分數: 0.9736
+2. {'svm__C': 1, 'svm__gamma': 'scale', 'svm__kernel': 'rbf'} - 分數: 0.9714
+3. {'svm__C': 10, 'svm__gamma': 'auto', 'svm__kernel': 'rbf'} - 分數: 0.9714
+4. {'svm__C': 100, 'svm__gamma': 'scale', 'svm__kernel': 'rbf'} - 分數: 0.9714
+5. {'svm__C': 100, 'svm__gamma': 'auto', 'svm__kernel': 'rbf'} - 分數: 0.9692
+
+=== 最佳模型的 Classification Report ===
+             precision    recall  f1-score   support
+   malignant       0.98      0.95      0.96        41
+      benign       0.97      0.99      0.98        73
+
+    accuracy                           0.97       114
+   macro avg       0.97      0.97      0.97       114
+weighted avg       0.97      0.97      0.97       114

@@ -1,0 +1,141 @@
+姓名：陳芊昀
+學號：c113181143
+
+=== 欄位自動分類結果 ===
+數值型欄位：['engine_hours', 'vibration_level', 'oil_temp', 'rpm']
+類別型欄位：['engine_type', 'maintenance_grade']
+
+
+=== 完整程式碼 ===
+（貼上你撰寫的完整 Python 程式碼）
+# q2_model_comparison.py
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import classification_report
+
+# 建立測試資料
+np.random.seed(42)
+n = 400
+
+data = {
+    'engine_hours': np.random.randint(100, 20000, n),
+    'vibration_level': np.round(np.random.uniform(0.1, 8.0, n), 2),
+    'oil_temp': np.round(np.random.uniform(60, 120, n), 1),
+    'rpm': np.random.randint(500, 3000, n),
+    'engine_type': np.random.choice(['diesel', 'gas_turbine', 'steam'], n, p=[0.5, 0.3, 0.2]),
+    'maintenance_grade': np.random.choice(['A', 'B', 'C'], n, p=[0.3, 0.5, 0.2]),
+}
+df = pd.DataFrame(data)
+
+# 加入遺漏值
+df.loc[np.random.choice(n, 20, replace=False), 'oil_temp'] = np.nan
+df.loc[np.random.choice(n, 10, replace=False), 'maintenance_grade'] = np.nan
+
+# 故障與否
+prob = 1 / (1 + np.exp(-(
+    0.0002 * df['engine_hours'] +
+    0.3 * df['vibration_level'] +
+    0.02 * df['oil_temp'].fillna(90) -
+    0.001 * df['rpm'] - 2.5
+)))
+df['is_fault'] = (np.random.random(n) < prob).astype(int)
+
+print(f"資料形狀：{df.shape}")
+print(f"\n故障比例：\n{df['is_fault'].value_counts(normalize=True)}")
+
+# 1. 自動區分數值型和類別型欄位
+num_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
+# 移除目標欄位
+num_cols = [col for col in num_cols if col != 'is_fault']
+cat_cols = df.select_dtypes(include=['object']).columns.tolist()
+
+print(f"\n=== 欄位自動分類結果 ===")
+print(f"數值型欄位：{num_cols}")
+print(f"類別型欄位：{cat_cols}")
+
+# 2. 建立 ColumnTransformer
+num_transformer = Pipeline([
+    ('imputer', SimpleImputer(strategy='median')),
+    ('scaler', StandardScaler())
+])
+
+cat_transformer = Pipeline([
+    ('imputer', SimpleImputer(strategy='most_frequent')),
+    ('encoder', OneHotEncoder(drop='first', sparse_output=False))
+])
+
+preprocessor = ColumnTransformer([
+    ('num', num_transformer, num_cols),
+    ('cat', cat_transformer, cat_cols)
+])
+
+# 切割資料
+X = df.drop('is_fault', axis=1)
+y = df['is_fault']
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42
+)
+
+# 3-4. 建立多種分類模型的 Pipeline
+models = {
+    'LogisticRegression': LogisticRegression(max_iter=200, random_state=42),
+    'KNeighborsClassifier': KNeighborsClassifier(),
+    'SVC': SVC(random_state=42),
+    'DecisionTreeClassifier': DecisionTreeClassifier(random_state=42)
+}
+
+# 訓練並計算準確率
+results = {}
+for name, model in models.items():
+    pipe = Pipeline([
+        ('pre', preprocessor),
+        ('clf', model)
+    ])
+    pipe.fit(X_train, y_train)
+    acc = pipe.score(X_test, y_test)
+    results[name] = acc
+    print(f"{name} 訓練完成，測試準確率: {acc:.4f}")
+
+# 5. 印出準確率比較表（由高到低）
+print(f"\n=== 模型準確率比較表（由高到低）===")
+sorted_results = sorted(results.items(), key=lambda x: x[1], reverse=True)
+for i, (name, score) in enumerate(sorted_results, 1):
+    print(f"{i}. {name}：{score:.4f}")
+
+# 6. 對最佳模型印出 Classification Report
+best_model_name = sorted_results[0][0]
+best_model_pipe = Pipeline([
+    ('pre', preprocessor),
+    ('clf', models[best_model_name])
+])
+best_model_pipe.fit(X_train, y_train)
+y_pred = best_model_pipe.predict(X_test)
+
+print(f"\n=== 最佳模型的 Classification Report ===")
+print(f"最佳模型：{best_model_name}")
+print(classification_report(y_test, y_pred, target_names=['正常', '故障']))
+=== 模型準確率比較表（由高到低）===
+1. DecisionTreeClassifier：0.7917
+2. LogisticRegression：0.7833
+3. SVC：0.7833
+4. KNeighborsClassifier：0.7750
+
+=== 最佳模型的 Classification Report ===
+最佳模型：DecisionTreeClassifier
+              precision    recall  f1-score   support
+
+         正常       0.80      0.87      0.83        68
+         故障       0.78      0.68      0.73        52
+
+    accuracy                           0.79       120
+   macro avg       0.79      0.78      0.78       120
+weighted avg       0.79      0.79      0.79       120

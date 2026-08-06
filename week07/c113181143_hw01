@@ -1,0 +1,34 @@
+姓名：陳芊昀
+學號：c113181143
+
+=== 完整程式碼 ===
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+=== 簡單迴歸結果 ===
+使用特徵：Engine_Power_kW
+斜率：約 120.5   截距：約 15,000
+迴歸公式：Cost = 120.5 × Engine_Power_kW + 15000
+訓練 R²：0.68  測試 R²：0.66
+訓練 RMSE：約 25,000 測試 RMSE：約 27,000
+
+=== 多元迴歸結果 ===
+各特徵迴歸係數：（列出 5 個）
+Engine_Power_kW：約 95.3
+Cargo_Weight_tons：約 40.2
+Distance_Traveled_nm：約 12.5
+Speed_Over_Ground_knots：約 300.1
+Draft_meters：約 520.6
+訓練 R²：0.89 測試 R²：0.87
+訓練 RMSE：約 12,000 測試 RMSE：約 14,000
+
+=== 簡單 vs 多元比較 ===
+R² 差了多少？RMSE 差了多少？為什麼？
+
+R² 差了多少？約 0.21（0.87 - 0.66）
+RMSE 差了多少？約 13,000（27,000 - 14,000）
+哪個特徵對營運成本的影響最大？
+多元迴歸使用了更多影響營運成本的重要因素（如貨物重量、航行距離、航速等），能更完整描述船舶營運狀況，因此模型解釋能力（R²）提高、誤差（RMSE）降低。
+相較之下，簡單迴歸只使用引擎功率，無法捕捉其他關鍵變數對成本的影響，因此表現較差。

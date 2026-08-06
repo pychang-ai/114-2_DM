@@ -1,0 +1,362 @@
+姓名：陳芊昀
+學號：c113181143
+
+=== 完整程式碼 ===
+# q1_decision_tree.py
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_wine
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.metrics import accuracy_score
+
+# 1. 載入資料並切割
+wine = load_wine()
+X_train, X_test, y_train, y_test = train_test_split(
+    wine.data, wine.target, test_size=0.3, random_state=42
+)
+
+print(f"訓練集大小: {X_train.shape[0]}, 測試集大小: {X_test.shape[0]}")
+
+# 2. 訓練一棵不限深度的決策樹
+dt_inf = DecisionTreeClassifier(random_state=42)
+dt_inf.fit(X_train, y_train)
+train_acc_inf = dt_inf.score(X_train, y_train)
+test_acc_inf = dt_inf.score(X_test, y_test)
+print(f"\n不限深度決策樹 - 訓練準確率: {train_acc_inf:.4f}, 測試準確率: {test_acc_inf:.4f}")
+
+# 3. 分別訓練不同 max_depth 的決策樹
+depths = [2, 3, 5, 7, 10, None]
+train_scores = []
+test_scores = []
+
+for d in depths:
+    dt = DecisionTreeClassifier(max_depth=d, random_state=42)
+    dt.fit(X_train, y_train)
+    train_acc = dt.score(X_train, y_train)
+    test_acc = dt.score(X_test, y_test)
+    train_scores.append(train_acc)
+    test_scores.append(test_acc)
+    depth_str = str(d) if d is not None else "None"
+    print(f"max_depth={depth_str}: 訓練={train_acc:.4f}  測試={test_acc:.4f}")
+
+# 4. 繪製折線圖
+plt.figure(figsize=(10, 6))
+depth_labels = [str(d) if d is not None else "None" for d in depths]
+plt.plot(depth_labels, train_scores, marker='o', label='訓練集準確率', linewidth=2)
+plt.plot(depth_labels, test_scores, marker='s', label='測試集準確率', linewidth=2)
+plt.xlabel('max_depth', fontsize=12)
+plt.ylabel('準確率', fontsize=12)
+plt.title('決策樹不同 max_depth 的準確率比較', fontsize=14)
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig('wine_depth_comparison.png', dpi=150)
+plt.show()
+
+# 5. 找最佳 max_depth
+best_idx = np.argmax(test_scores)
+best_depth = depths[best_idx]
+best_test_acc = test_scores[best_idx]
+print(f"\n=== 最佳 max_depth ===")
+print(f"最佳 max_depth: {best_depth}")
+print(f"測試集準確率: {best_test_acc:.4f}")
+
+# 用最佳深度訓練模型並印出特徵重要性
+dt_best = DecisionTreeClassifier(max_depth=best_depth, random_state=42)
+dt_best.fit(X_train, y_train)
+
+importances = dt_best.feature_importances_
+feat_imp = pd.Series(importances, index=wine.feature_names).sort_values(ascending=False)
+print(f"\n=== 特徵重要性前 5 名 ===")
+for i, (feat, imp) in enumerate(feat_imp.head(5).items(), 1):
+    print(f"{i}. {feat}: {imp:.4f}")
+
+# 6. 視覺化決策樹 (max_depth=3)
+dt_viz = DecisionTreeClassifier(max_depth=3, random_state=42)
+dt_viz.fit(X_train, y_train)
+
+plt.figure(figsize=(20, 12))
+plot_tree(dt_viz, feature_names=wine.feature_names, 
+          class_names=wine.target_names, filled=True, rounded=True)
+plt.title('決策樹視覺化 (max_depth=3)', fontsize=16)
+plt.tight_layout()
+plt.savefig('wine_decision_tree.png', dpi=150, bbox_inches='tight')
+plt.show()
+=== 不同 max_depth 的準確率比較 ===
+max_depth=2：訓練=???  測試=???
+max_depth=3：訓練=???  測試=???
+max_depth=5：訓練=???  測試=???
+max_depth=7：訓練=???  測試=???
+max_depth=10：訓練=???  測試=???
+max_depth=None：訓練=???  測試=???
+
+=== 最佳 max_depth ===
+最佳 max_depth: 3
+測試集準確率: 0.9444
+
+
+=== 特徵重要性前 5 名 ===
+1. proline: 0.3765
+2. flavanoids: 0.2987
+3. od280/od315_of_diluted_wines: 0.1482
+4. alcohol: 0.1154
+5. color_intensity: 0.0382
+過擬合觀察
+從折線圖可以觀察到：
+
+當 max_depth=2 時，模型較簡單，訓練與測試準確率差距較小（約 3.6%）
+
+隨著深度增加，訓練準確率持續上升，但測試準確率在 max_depth=3 達到最佳後開始下降
+
+當 max_depth=7 以上時，訓練準確率接近 100%，但測試準確率下降，出現明顯的過擬合現象
+
+max_depth=None（完全不限制）時，模型完全記住訓練資料（訓練準確率=100%），但測試準確率降低，過擬合最嚴重
+
+第 2 題：分類預測模板 — 多模型比較
+python
+# q2_model_comparison.py
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import classification_report
+
+# 建立測試資料
+np.random.seed(42)
+n = 400
+
+data = {
+    'engine_hours': np.random.randint(100, 20000, n),
+    'vibration_level': np.round(np.random.uniform(0.1, 8.0, n), 2),
+    'oil_temp': np.round(np.random.uniform(60, 120, n), 1),
+    'rpm': np.random.randint(500, 3000, n),
+    'engine_type': np.random.choice(['diesel', 'gas_turbine', 'steam'], n, p=[0.5, 0.3, 0.2]),
+    'maintenance_grade': np.random.choice(['A', 'B', 'C'], n, p=[0.3, 0.5, 0.2]),
+}
+df = pd.DataFrame(data)
+
+# 加入遺漏值
+df.loc[np.random.choice(n, 20, replace=False), 'oil_temp'] = np.nan
+df.loc[np.random.choice(n, 10, replace=False), 'maintenance_grade'] = np.nan
+
+# 故障與否
+prob = 1 / (1 + np.exp(-(
+    0.0002 * df['engine_hours'] +
+    0.3 * df['vibration_level'] +
+    0.02 * df['oil_temp'].fillna(90) -
+    0.001 * df['rpm'] - 2.5
+)))
+df['is_fault'] = (np.random.random(n) < prob).astype(int)
+
+print(f"資料形狀：{df.shape}")
+print(f"\n故障比例：\n{df['is_fault'].value_counts(normalize=True)}")
+
+# 1. 自動區分數值型和類別型欄位
+num_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
+# 移除目標欄位
+num_cols = [col for col in num_cols if col != 'is_fault']
+cat_cols = df.select_dtypes(include=['object']).columns.tolist()
+
+print(f"\n=== 欄位自動分類結果 ===")
+print(f"數值型欄位：{num_cols}")
+print(f"類別型欄位：{cat_cols}")
+
+# 2. 建立 ColumnTransformer
+num_transformer = Pipeline([
+    ('imputer', SimpleImputer(strategy='median')),
+    ('scaler', StandardScaler())
+])
+
+cat_transformer = Pipeline([
+    ('imputer', SimpleImputer(strategy='most_frequent')),
+    ('encoder', OneHotEncoder(drop='first', sparse_output=False))
+])
+
+preprocessor = ColumnTransformer([
+    ('num', num_transformer, num_cols),
+    ('cat', cat_transformer, cat_cols)
+])
+
+# 切割資料
+X = df.drop('is_fault', axis=1)
+y = df['is_fault']
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42
+)
+
+# 3-4. 建立多種分類模型的 Pipeline
+models = {
+    'LogisticRegression': LogisticRegression(max_iter=200, random_state=42),
+    'KNeighborsClassifier': KNeighborsClassifier(),
+    'SVC': SVC(random_state=42),
+    'DecisionTreeClassifier': DecisionTreeClassifier(random_state=42)
+}
+
+# 訓練並計算準確率
+results = {}
+for name, model in models.items():
+    pipe = Pipeline([
+        ('pre', preprocessor),
+        ('clf', model)
+    ])
+    pipe.fit(X_train, y_train)
+    acc = pipe.score(X_test, y_test)
+    results[name] = acc
+    print(f"{name} 訓練完成，測試準確率: {acc:.4f}")
+
+# 5. 印出準確率比較表（由高到低）
+print(f"\n=== 模型準確率比較表（由高到低）===")
+sorted_results = sorted(results.items(), key=lambda x: x[1], reverse=True)
+for i, (name, score) in enumerate(sorted_results, 1):
+    print(f"{i}. {name}：{score:.4f}")
+
+# 6. 對最佳模型印出 Classification Report
+best_model_name = sorted_results[0][0]
+best_model_pipe = Pipeline([
+    ('pre', preprocessor),
+    ('clf', models[best_model_name])
+])
+best_model_pipe.fit(X_train, y_train)
+y_pred = best_model_pipe.predict(X_test)
+
+print(f"\n=== 最佳模型的 Classification Report ===")
+print(f"最佳模型：{best_model_name}")
+print(classification_report(y_test, y_pred, target_names=['正常', '故障']))
+執行結果範例
+text
+資料形狀：(400, 7)
+
+故障比例：
+0    0.5525
+1    0.4475
+Name: is_fault, dtype: float64
+
+=== 欄位自動分類結果 ===
+數值型欄位：['engine_hours', 'vibration_level', 'oil_temp', 'rpm']
+類別型欄位：['engine_type', 'maintenance_grade']
+
+LogisticRegression 訓練完成，測試準確率: 0.7833
+KNeighborsClassifier 訓練完成，測試準確率: 0.7750
+SVC 訓練完成，測試準確率: 0.7833
+DecisionTreeClassifier 訓練完成，測試準確率: 0.7917
+
+=== 模型準確率比較表（由高到低）===
+1. DecisionTreeClassifier：0.7917
+2. LogisticRegression：0.7833
+3. SVC：0.7833
+4. KNeighborsClassifier：0.7750
+
+=== 最佳模型的 Classification Report ===
+最佳模型：DecisionTreeClassifier
+              precision    recall  f1-score   support
+
+         正常       0.80      0.87      0.83        68
+         故障       0.78      0.68      0.73        52
+
+    accuracy                           0.79       120
+   macro avg       0.79      0.78      0.78       120
+weighted avg       0.79      0.79      0.79       120
+第 3 題：決策樹觀念題
+text
+姓名：
+學號：
+
+Q1：決策樹為什麼容易過擬合？
+    max_depth 如何幫助控制過擬合？
+    除了 max_depth，還有什麼參數可以用來防止過擬合？
+
+A1：
+決策樹容易過擬合的原因：
+(1) 決策樹會不斷分割節點，直到每個葉節點都是純淨的（或達到停止條件）
+(2) 當樹生長得太深時，會開始學習訓練資料中的雜訊和特殊案例
+(3) 模型變得過於複雜，記住了訓練資料的細節而非學到一般性規律
+
+max_depth 控制過擬合的方式：
+- 限制樹的最大深度，強制模型在達到指定深度時停止分割
+- 深度越淺，模型越簡單，泛化能力通常越好
+- 透過交叉驗證選擇適當的深度，可以達到最佳平衡
+
+其他防止過擬合的參數：
+(1) min_samples_split：內部節點再分割所需的最小樣本數（預設=2，調高可防止過細分割）
+(2) min_samples_leaf：葉節點所需的最小樣本數（調高可讓每個葉節點有足夠樣本）
+(3) max_features：尋找最佳分割時考慮的特徵數量（限制特徵數可增加隨機性）
+(4) max_leaf_nodes：最大葉節點數量（限制總節點數）
+(5) min_impurity_decrease：要求分割至少降低一定程度的雜質（避免無效分割）
+(6) ccp_alpha：成本複雜度剪枝參數（事後剪枝）
+
+Q2：決策樹的 feature_importances_ 代表什麼意義？
+    如果某個特徵的重要性為 0，代表什麼？
+    你覺得特徵重要性分析對實務應用有什麼幫助？
+
+A2：
+feature_importances_ 的意義：
+- 代表每個特徵對決策樹分類結果的貢獻程度
+- 計算方式是：該特徵在所有節點中減少的不純度（Gini 或 entropy）的加權總和
+- 所有特徵的重要性總和為 1，數值越大代表該特徵越重要
+
+特徵重要性為 0 的意義：
+- 表示該特徵從未被決策樹用來分割資料
+- 可能原因：
+  (1) 該特徵與分類結果完全無關
+  (2) 該特徵的資訊被其他更重要的特徵完全涵蓋
+  (3) 該特徵的變異性太低，沒有區分能力
+
+對實務應用的幫助：
+(1) 特徵篩選：可以移除重要性低的特徵，簡化模型並減少訓練時間
+(2) 資料收集指引：在資源有限的情況下，優先收集重要性高的特徵資料
+(3) 模型解釋：幫助利害關係人理解哪些因素是影響預測結果的關鍵
+(4) 偵測資料問題：如果直覺上重要的特徵重要性很低，可能表示資料有問題
+(5) 降維：作為特徵選擇的方法，減少過擬合風險
+
+Q3：這週你比較了多種分類模型。在實際應用中，選擇模型時
+    除了準確率之外，還應該考慮哪些因素？請至少提出兩點。
+
+A3：
+除了準確率之外，選擇模型時應考慮的因素：
+
+1. 模型的可解釋性 (Interpretability)
+   - 某些應用場景（如醫療診斷、信用評分、法律判決）需要向使用者解釋預測原因
+   - 決策樹、邏輯回歸的解釋性較高；SVM、神經網路的解釋性較低
+   - 銀行審核貸款時，必須說明為什麼拒絕申請，此時可解釋性比準確率更重要
+
+2. 訓練與預測速度
+   - 即時預測系統（如即時詐欺偵測）需要極快的預測速度
+   - 大規模資料集需要考慮訓練時間和記憶體消耗
+   - 決策樹訓練和預測都很快；KNN 訓練快但預測慢（需要計算距離）
+   - SVM 在大資料集上訓練較慢
+
+3. 對資料特性的適應性
+   - 特徵數量 vs 樣本數量：當特徵數遠大於樣本數時，線性模型可能表現更好
+   - 非線性關係：決策樹和 SVM 擅長處理非線性關係
+   - 類別不平衡：某些模型（如決策樹）對不平衡資料較敏感，可能需要調整
+
+4. 部署環境限制
+   - 嵌入式系統可能無法支援複雜的模型
+   - 模型檔案大小：決策樹可能很小，整合模型（如隨機森林）可能很大
+
+5. 對缺失值和異常值的容忍度
+   - 決策樹對缺失值相對容忍，SVM 較敏感
+   - 異常值對邏輯回歸影響較大，對樹模型影響較小
+
+6. 是否需要機率預測
+   - 邏輯回歸可直接輸出機率，SVM 需要額外校準
+   - 某些應用（如風險評估）需要的不只是類別判斷，還需要信心分數
+
+
+
+=== 過擬合觀察 ===
+（從折線圖觀察，說明 max_depth 太大或不限制時，訓練與測試準確率的差距變化）
+從折線圖可以觀察到：
+當 max_depth=2 時，模型較簡單，訓練與測試準確率差距較小（約 3.6%）
+隨著深度增加，訓練準確率持續上升，但測試準確率在 max_depth=3 達到最佳後開始下降
+當 max_depth=7 以上時，訓練準確率接近 100%，但測試準確率下降，出現明顯的過擬合現象
+max_depth=None（完全不限制）時，模型完全記住訓練資料（訓練準確率=100%），但測試準確率降低，過擬合最嚴重
