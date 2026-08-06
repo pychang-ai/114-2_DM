@@ -1,0 +1,158 @@
+姓名:朱智遠
+學號：C113181116
+
+
+q1
+
+
+=== 完整程式碼 ===
+features_q1 = ['Engine_Power_kW', 'Cargo_Weight_tons', 'Distance_Traveled_nm', 'Speed_Over_Ground_knots', 'Draft_meters']
+target_q1 = 'Operational_Cost_USD'
+
+X_train_m, X_test_m, y_train_q1, y_test_q1 = train_test_split(
+    df[features_q1], df[target_q1], test_size=0.2, random_state=42
+)
+
+X_train_s = X_train_m[['Engine_Power_kW']]
+X_test_s = X_test_m[['Engine_Power_kW']]
+
+lr_simple = LinearRegression()
+lr_simple.fit(X_train_s, y_train_q1)
+
+y_pred_train_s = lr_simple.predict(X_train_s)
+y_pred_test_s = lr_simple.predict(X_test_s)
+
+print("\n=== 簡單迴歸結果 ===")
+print("使用特徵：Engine_Power_kW")
+print(f"斜率：{lr_simple.coef_[0]:.4f}   截距：{lr_simple.intercept_:.4f}")
+print(f"迴歸公式：Cost = {lr_simple.coef_[0]:.4f} × Engine_Power_kW + {lr_simple.intercept_:.4f}")
+print(f"訓練 R²：{r2_score(y_train_q1, y_pred_train_s):.4f}   測試 R²：{r2_score(y_test_q1, y_pred_test_s):.4f}")
+print(f"訓練 RMSE：{np.sqrt(mean_squared_error(y_train_q1, y_pred_train_s)):.2f} 測試 RMSE：{np.sqrt(mean_squared_error(y_test_q1, y_pred_test_s)):.2f}")
+
+lr_multi = LinearRegression()
+lr_multi.fit(X_train_m, y_train_q1)
+
+y_pred_train_m = lr_multi.predict(X_train_m)
+y_pred_test_m = lr_multi.predict(X_test_m)
+
+print("\n=== 多元迴歸結果 ===")
+print("各特徵迴歸係數：")
+for feat, coef in zip(features_q1, lr_multi.coef_):
+    print(f"  {feat}: {coef:.4f}")
+print(f"訓練 R²：{r2_score(y_train_q1, y_pred_train_m):.4f}   測試 R²：{r2_score(y_test_q1, y_pred_test_m):.4f}")
+print(f"訓練 RMSE：{np.sqrt(mean_squared_error(y_train_q1, y_pred_train_m)):.2f} 測試 RMSE：{np.sqrt(mean_squared_error(y_test_q1, y_pred_test_m)):.2f}")
+=== 簡單迴歸結果 ===
+使用特徵：Engine_Power_kW
+斜率：-2.9053   截距：259886.6312
+迴歸公式：Cost = -2.9053 × Engine_Power_kW + 259886.6312
+訓練 R²：0.0002   測試 R²：-0.0003
+訓練 RMSE：140453.26 測試 RMSE：142448.04
+
+=== 多元迴歸結果 ===
+各特徵迴歸係數：
+  Engine_Power_kW: -2.8017
+  Cargo_Weight_tons: -14.9563
+  Distance_Traveled_nm: -0.8027
+  Speed_Over_Ground_knots: -1021.7892
+  Draft_meters: 200.4663
+訓練 R²：0.0047   測試 R²：-0.0074
+訓練 RMSE：140138.09 測試 RMSE：142953.48
+
+
+q2
+
+
+=== 完整程式碼 ===
+df_clean = df.dropna(subset=['Maintenance_Status']).copy()
+df_clean['is_critical'] = (df_clean['Maintenance_Status'] == 'Critical').astype(int)
+
+features_q2 = ['Engine_Power_kW', 'Speed_Over_Ground_knots', 'Distance_Traveled_nm', 'Draft_meters', 'Cargo_Weight_tons', 'Turnaround_Time_hours']
+X_q2 = df_clean[features_q2]
+y_q2 = df_clean['is_critical']
+
+X_train_l, X_test_l, y_train_l, y_test_l = train_test_split(
+    X_q2, y_q2, test_size=0.2, random_state=42
+)
+
+model_pipeline = make_pipeline(
+    StandardScaler(),
+    LogisticRegression(random_state=42)
+)
+model_pipeline.fit(X_train_l, y_train_l)
+
+y_pred_l = model_pipeline.predict(X_test_l)
+y_prob_l = model_pipeline.predict_proba(X_test_l)[:, 1] # 拿來算 AUC 的機率值
+
+print("\n=== 各特徵迴歸係數 ===")
+log_reg_model = model_pipeline.named_steps['logisticregression']
+for feat, coef in zip(features_q2, log_reg_model.coef_[0]):
+    print(f"{feat:<25}: {coef:.4f}")
+
+print("\n=== 分類報告 ===")
+print(classification_report(y_test_l, y_pred_l))
+
+print("=== AUC 值 ===")
+print(f"{roc_auc_score(y_test_l, y_prob_l):.4f}")
+
+print("\n=== 混淆矩陣判讀 ===")
+tn, fp, fn, tp = confusion_matrix(y_test_l, y_pred_l).ravel()
+print(f"TP：{tp}  FP：{fp}")
+print(f"FN：{fn}  TN：{tn}")
+print("=" * 60)
+=== 各特徵迴歸係數 ===
+Engine_Power_kW          : 0.0271
+Speed_Over_Ground_knots  : 0.0626
+Distance_Traveled_nm     : 0.0060
+Draft_meters             : -0.0559
+Cargo_Weight_tons        : -0.0317
+Turnaround_Time_hours    : 0.0098
+
+=== 分類報告 ===
+              precision    recall  f1-score   support
+
+           0       0.65      1.00      0.79       339
+           1       0.00      0.00      0.00       181
+
+    accuracy                           0.65       520
+   macro avg       0.33      0.50      0.39       520
+weighted avg       0.43      0.65      0.51       520
+
+=== AUC 值 ===
+0.4789
+
+=== 混淆矩陣判讀 ===
+TP：0  FP：0
+FN：181  TN：339
+
+
+q3
+
+
+Q1：課堂上我們用單一特徵（ad_spend）和三個特徵（tv, radio, web）
+    分別做了迴歸。作業中你也比較了單一特徵和多特徵。
+    多元迴歸的 R² 比簡單迴歸高多少？
+    加更多特徵一定會讓模型更好嗎？什麼情況下反而會變差？
+a1:
+R² 變化分析：根據你的執行結果，多元迴歸的訓練 $R^2$ (0.0047) 僅比簡單迴歸的訓練 $R^2$ (0.0002) 稍微高出 0.0045。這顯示在目前的數據集中，加入額外特徵對模型解釋力的提升微乎其微。
+更多特徵一定會讓模型更好嗎？答案是否定的。無效特徵（Noise）： 若加入與目標無關的變數，模型會試圖勉強找出關聯，導致模型學習到數據中的「雜訊」，這會降低模型對新數據的預測能力（泛化能力）。
+過擬合（Overfitting）： 當特徵數量過多，而樣本數不足時，模型會開始背誦訓練資料，導致在訓練集表現尚可，但在測試集上表現極差。多重共線性： 
+如果新加入的特徵與原有的特徵高度相關，會造成模型係數估計不穩定，甚至導致模型效果變差。
+
+Q2：R²（決定係數）和 RMSE（均方根誤差）都可以評估迴歸模型。
+    它們的差異是什麼？在預測船舶營運成本的情境下，
+    你會更看重哪一個指標？為什麼？
+A2:
+R^2 (決定係數)： 衡量模型的「解釋力」。它告訴你自變數能解釋多少比例的目標變數變異，是一個 0 到 1 之間的相對指標，不帶單位。RMSE (均方根誤差)： 
+衡量模型的「預測誤差」。它直接計算預測值與真實值之間的差距，帶有原始資料的單位（此處為 USD），反映了模型預測的絕對偏差大小。情境決策：在預測「船舶營運成本」的情境下，
+我會更看重 RMSE。原因： 企業財務規劃需要具體的金額預估。即便 $R^2$ 很高，若 RMSE 高達數萬美元，代表誤差幅度已大到影響營運決策與預算編列。
+MSE 能明確告訴決策者該模型預測的「誤差值」大約是多少美元，更具備實務參考價值。
+
+Q3：課堂上 Titanic 的混淆矩陣中，FN 代表「實際生還但預測死亡」。
+    作業中船舶維護的 FN 代表「實際 Critical 但預測正常」。
+    在不同的應用情境中（例如：醫療診斷、垃圾郵件過濾、自駕車障礙偵測），
+    FN 和 FP 哪個更嚴重？請任選一個情境說明。
+A3：我選擇【醫療診斷（例如：癌症篩檢）】情境來說明：
+在這個情境中，【FN（偽陰性）】遠比 FP（偽陽性）嚴重得多。
+- FN（實際有病，但模型預測正常）：這意味著病人已經罹患癌症，卻被模型誤診為健康而放回家。這會導致病人錯過黃金治療時間，嚴重時會直接危及生命。
+- FP（實際健康，但模型預測有病）：雖然會造成病人心驚膽顫、需要進一步複檢，但通常可以透過第二次、第三次更精密的切片檢查來修正錯誤，屬於「虛驚一場」，不會直接鬧出人命。
+因此在人命關天的安全與醫療情境下，我們通常寧願多抓（容忍較高 FP），也絕對不能漏抓（必須極力消滅 FN）。
