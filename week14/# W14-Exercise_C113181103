@@ -1,0 +1,60 @@
+# W14-Exercise
+## Error01
+ValueError: could not convert string to float: 'sales' 這個錯誤表示相關性計算失敗，因為它試圖將字串資料（例如 'sales' 欄位）轉換為數值資料，而這是不可能的。為了解決這個問題，我們需要只計算 DataFrame 中數值欄位的相關性。
+```
+#sns.heatmap(df.corr().round(2), annot=True, cmap='coolwarm');
+sns.heatmap(df.select_dtypes(include=np.number).corr().round(2), annot=True, cmap='coolwarm');
+```
+這行程式碼是使用 seaborn 函式庫來繪製一個熱力圖（heatmap），用於視覺化數據框 df 中數值型欄位之間的相關性。讓我來詳細解釋一下：
+- df.select_dtypes(include=np.number): 這部分程式碼首先從數據框 df 中選取出所有資料型態為數值（例如整數或浮點數）的欄位。這樣做的目的是確保只有數值資料會被用來計算相關性，因為相關性只能在數值之間計算。
+- .corr(): 在選取出數值型欄位後，.corr() 方法會計算這些欄位之間的皮爾森相關係數（Pearson correlation coefficient）。相關係數介於 -1 到 1 之間，表示兩個變數之間的線性關係強度和方向。
+- .round(2): 計算出的相關係數通常會有許多小數位，round(2) 則將這些係數四捨五入到小數點後兩位，使結果更容易閱讀。
+- sns.heatmap(...): 這是 seaborn 函式庫中用來繪製熱力圖的函數。它接受處理後的相關性矩陣作為輸入。
+- annot=True: 這個參數表示在熱力圖的每個單元格上顯示相關係數的數值。這使得可以直接看到每個變數對之間的相關程度，而不需要只看顏色。
+- cmap='coolwarm': 這個參數設定了熱力圖的顏色映射（colormap）。'coolwarm' 是一種常見的色譜，通常用紅色表示正相關，藍色表示負相關，白色或淺色表示接近零的相關性。
+## Error02
+這個錯誤 ValueError: could not convert string to float: 'sales' 表示在計算相關性時，程式嘗試將非數值型的 'sales' 欄位轉換為浮點數，但這是不可能的。為了解決這個問題，我們應該只對數據框中的數值型欄位計算相關性。
+```
+#df.drop('left', axis=1).corrwith(df['left']).round(2)
+df.drop('left', axis=1).select_dtypes(include=np.number).corrwith(df['left']).round(2)
+```
+這行程式碼 df.drop('left', axis=1).select_dtypes(include=np.number).corrwith(df['left']).round(2) 的作用是計算數據集中除了 'left' 欄位以外的數值型欄位，與 'left' 欄位本身的相關性，並將結果四捨五入到小數點後兩位。
+
+讓我逐步解釋：
+
+- df.drop('left', axis=1): 這一部分是先從原始數據框 df 中移除 'left' 這個欄位。axis=1 表示移除欄位而不是列。
+- .select_dtypes(include=np.number): 在移除了 'left' 欄位後，它會選取剩餘欄位中所有資料型態為數值（例如整數或浮點數）的欄位。這是因為相關性只能在數值型資料之間計算。
+- .corrwith(df['left']): 這個方法會計算前面選取出的所有數值型欄位，分別與 df['left'] 這個 Series（即原始數據框中的 'left' 欄位）的相關係數。它會針對每個數值型欄位單獨計算與 'left' 的相關性。
+- .round(2): 將計算出的相關係數四捨五入到小數點後兩位，以便於閱讀。
+關於執行結果的說明：
+執行結果顯示了每個數值型欄位與 left (是否離職) 欄位之間的相關係數：
+- satisfaction_level -0.39: satisfaction_level (滿意度) 與離職呈現中度負相關。這表示員工滿意度越低，離職的可能性越高。
+- last_evaluation 0.01: last_evaluation (上次考評) 與離職呈現非常弱的正相關。這意味著兩者之間幾乎沒有線性關係。
+- number_project 0.02: number_project (專案數量) 與離職呈現非常弱的正相關。同樣，兩者之間幾乎沒有線性關係。
+- average_montly_hours 0.07: average_montly_hours (平均每月工時) 與離職呈現弱正相關。這可能暗示工時越高，離職意願略高，但關係不強。
+- time_spend_company 0.14: time_spend_company (在公司年資) 與離職呈現弱正相關。這表示在公司待越久，離職的可能性略高，這在某些情況下可能是由於職涯發展瓶頸或倦怠。
+- Work_accident -0.15: Work_accident (工作事故) 與離職呈現弱負相關。這可能意味著發生工作事故的員工反而離職可能性略低，但這需要進一步分析。
+- promotion_last_5years -0.06: promotion_last_5years (過去五年晉升) 與離職呈現弱負相關。這表示有晉升的員工離職可能性略低，這符合直覺。
+總結來說，最重要的發現是 satisfaction_level 與離職之間存在顯著的負相關，這是一個重要的預測因子。 其他數值型欄位與離職的線性相關性則相對較弱。
+## Error03
+這個錯誤 AttributeError: 'float' object has no attribute 'round' 表示您嘗試在一個浮點數（float）物件上呼叫 round 方法，但浮點數本身並沒有這個方法。在 Python 中，您應該使用內建的 round() 函式來對浮點數進行四捨五入。我會修正程式碼，將 accuracy_score 的結果放入 round() 函式中。
+```
+#print('正確率：', accuracy_score(y_test, y_pred).round(2))
+print('正確率：', round(accuracy_score(y_test, y_pred), 2))
+```
+## Error04
+此錯誤 AttributeError: 'float' object has no attribute 'round' 表示您試圖在浮點數上使用名為 .round() 的方法，但此方法不存在。您應該改用全域的 round() 函數。我會將程式碼修改為使用 round(score, 3)。
+
+網格搜尋已完成。用於預測員工流失的最佳模型是 max_depth=10 的 DecisionTreeClassifier。該模型在訓練集上達到了 0.978 的交叉驗證分數，在測試集上也達到了 0.978 的分數。混淆矩陣顯示該模型幾乎沒有錯誤分類。
+```
+#print('測試集的結果', score.round(3))
+print('測試集的結果', round(score, 3))
+```
+## Error05
+此錯誤 AttributeError: 'float' object has no attribute 'round' 表示您試圖在浮點數上使用 round() 方法，但浮點數沒有這個方法。您應該使用內建的 round() 函數，將浮點數和要保留的小數位數作為參數傳入。我會將程式碼中的 score.round(3) 和 gs.best_score_.round(3) 修改為 round(score, 3) 和 round(gs.best_score_, 3)。
+```
+#print('訓練集交叉驗證的最佳結果', gs.best_score_.round(3))
+print('訓練集交叉驗證的最佳結果', round(gs.best_score_, 3))
+#print('測試集的結果', score.round(3))
+print('測試集的結果', round(score, 3))
+```
