@@ -1,0 +1,55 @@
+姓名：林宥任
+學號：C113181108
+=== 完整程式碼 ===
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+
+# 載入資料
+df = pd.read_csv('data/Ship_Performance_Dataset.csv')
+
+# 準備資料
+X_simple = df[['Engine_Power_kW']]
+X_multi = df[['Engine_Power_kW', 'Cargo_Weight_tons', 'Distance_Traveled_nm', 'Speed_Over_Ground_knots', 'Draft_meters']]
+y_reg = df['Operational_Cost_USD']
+
+# 切分訓練集與測試集
+X_train_s, X_test_s, y_train_s, y_test_s = train_test_split(X_simple, y_reg, test_size=0.2, random_state=42)
+X_train_m, X_test_m, y_train_m, y_test_m = train_test_split(X_multi, y_reg, test_size=0.2, random_state=42)
+
+# 簡單線性迴歸
+lr_simple = LinearRegression()
+lr_simple.fit(X_train_s, y_train_s)
+
+# 多元線性迴歸
+lr_multi = LinearRegression()
+lr_multi.fit(X_train_m, y_train_m)
+
+=== 簡單迴歸結果 ===
+使用特徵：Engine_Power_kW
+斜率：15.5143   截距：247203.1907
+迴歸公式：Cost = 15.5143 × Engine_Power_kW + 247203.1907
+訓練 R²：0.4720   測試 R²：0.5261
+訓練 RMSE：48317.5077 測試 RMSE：45182.1181
+
+=== 多元迴歸結果 ===
+各特徵迴歸係數：
+  Engine_Power_kW: 15.7045
+  Cargo_Weight_tons: 2.0646
+  Distance_Traveled_nm: 46.4521
+  Speed_Over_Ground_knots: 1183.5452
+  Draft_meters: 3702.8534
+訓練 R²：0.8599   測試 R²：0.8556
+訓練 RMSE：24893.3730 測試 RMSE：24942.3089
+
+=== 簡單 vs 多元比較 ===
+R² 差了多少？RMSE 差了多少？為什麼？
+1. R² 差異：多元迴歸的測試集 R² 比簡單迴歸提升了 0.3295（即提升了約 33% 的解釋力）。
+2. RMSE 差異：多元迴歸的測試集 RMSE 比簡單迴歸降低了 20239.8092 美元（誤差大幅減少了近 45%）。
+3. 為什麼：因為簡單迴歸僅單獨考慮「引擎功率」，忽視了其他同樣會顯著消耗資源的因素；而多元迴歸同時納入了貨物重量、航行距離、航速及吃水深度等關鍵特徵，提供了更多維度的資訊，因此模型能大幅提升預測精準度並降低誤差。
+
+哪個特徵對營運成本的影響最大？
+在目前的未標準化係數中，吃水深度（Draft_meters）的係數最大（3702.8534），代表吃水深度每增加 1 公尺，營運成本平均增加約 3,702 美元。
+

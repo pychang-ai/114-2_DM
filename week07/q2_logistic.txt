@@ -1,0 +1,66 @@
+姓名：林宥任
+學號：C113181108
+
+=== 完整程式碼 ===
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
+
+# 載入資料
+df = pd.read_csv('data/Ship_Performance_Dataset.csv')
+
+# 資料前處理與二元目標建立
+df_clean = df.dropna(subset=['Maintenance_Status']).copy()
+df_clean['is_critical'] = (df_clean['Maintenance_Status'] == 'Critical').astype(int)
+
+# 選取數值特徵
+features = ['Engine_Power_kW', 'Speed_Over_Ground_knots', 'Distance_Traveled_nm', 
+            'Draft_meters', 'Cargo_Weight_tons', 'Turnaround_Time_hours']
+X = df_clean[features]
+y = df_clean['is_critical']
+
+# 切分訓練集與測試集 (8:2)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 建立 Pipeline：標準化 + 羅吉斯迴歸
+model_pipeline = make_pipeline(
+    StandardScaler(),
+    LogisticRegression(random_state=42)
+)
+model_pipeline.fit(X_train, y_train)
+
+=== 各特徵迴歸係數 ===
+Engine_Power_kW:          7.2568
+Speed_Over_Ground_knots:  5.3582
+Distance_Traveled_nm:     -0.0578
+Draft_meters:             -2.5317
+Cargo_Weight_tons:        0.0168
+Turnaround_Time_hours:    5.9353
+
+=== 影響最大的特徵 ===
+特徵名稱：Engine_Power_kW（引擎功率）
+原因：因為在透過 StandardScaler 進行數據標準化、消除各特徵單位的影響後，Engine_Power_kW 的迴歸係數絕對值最大（7.2568）。這代表在其他條件不變的情況下，該特徵每變動一個標準差，對船舶維護狀態成為 Critical 的勝算比（Log-Odds）影響程度最為顯著。
+
+=== 分類報告 ===
+              precision    recall  f1-score   support
+
+           0       1.00      0.99      0.99       249
+           1       0.99      1.00      0.99       299
+
+    accuracy                           0.99       548
+   macro avg       0.99      0.99      0.99       548
+weighted avg       0.99      0.99      0.99       548
+
+=== AUC 值 ===
+1.0000
+
+=== 混淆矩陣判讀 ===
+TP：298  FP：2
+FN：1   TN：247
+
+在船舶維護預測中，FN（漏報 Critical）比 FP（誤報 Critical）更嚴重，因為：
+如果發生 FN（漏報），代表船舶實際上已經處於極度危險、隨時可能機械故障的 Critical 狀態，但模型卻誤判為安全正常。這會導致船東與機艙人員未能及時安排進廠檢修，讓船舶帶病出海，極易引發海上拋錨、失去動力、甚至是沉船等重大的船難與生命財產損失。相反地，FP（誤報）頂多是讓正常的船虛驚一場進廠檢查，花費的是額外的檢查時間與小額人力成本，其付出的代價與沉船風險相比微不足道。
+

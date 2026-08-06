@@ -1,0 +1,79 @@
+
+姓名：林宥任
+學號：C113181108
+
+=== 完整程式碼 ===
+import pandas as pd
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import classification_report
+
+# 1. 載入 breast_cancer 資料集
+data = load_breast_cancer()
+X = pd.DataFrame(data.data, columns=data.feature_names)
+y = data.target
+
+# 2. 切割資料（test_size=0.2, random_state=42）
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 3. 建立 Pipeline：StandardScaler → SVC
+pipe = Pipeline([
+    ('scaler', StandardScaler()),
+    ('svm', SVC())
+])
+
+# 4. 定義參數搜尋空間
+param_grid = {
+    'svm__C': [0.1, 1, 10, 100],
+    'svm__gamma': ['scale', 'auto', 0.01, 0.1],
+    'svm__kernel': ['rbf', 'linear']
+}
+
+# 5. 使用 GridSearchCV（cv=5）進行搜尋
+grid = GridSearchCV(pipe, param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+grid.fit(X_train, y_train)
+
+# 6. 印出結果
+print(f"最佳參數：{grid.best_params_}")
+print(f"最佳交叉驗證分數：{grid.best_score_:.4f}")
+print(f"測試集準確率：{grid.score(X_test, y_test):.4f}")
+
+# 印出前 5 名
+results_df = pd.DataFrame(grid.cv_results_)
+top5 = results_df.nsmallest(5, 'rank_test_score')[['params', 'mean_test_score', 'rank_test_score']]
+print(top5)
+
+# 印出分類報告
+y_pred = grid.predict(X_test)
+print(classification_report(y_test, y_pred))
+
+
+=== 搜尋空間大小 ===
+總共測試了幾種組合：32 種組合（4 個 C 值 × 4 個 gamma 值 × 2 個 kernel 類型）
+
+=== 最佳結果 ===
+最佳參數：{'svm__C': 0.1, 'svm__gamma': 'scale', 'svm__kernel': 'linear'}
+最佳交叉驗證分數：0.9736
+測試集準確率：0.9825
+
+=== 前 5 名參數組合 ===
+1. 分數：0.9736 - {'svm__C': 0.1, 'svm__gamma': 'scale', 'svm__kernel': 'linear'}
+2. 分數：0.9736 - {'svm__C': 0.1, 'svm__gamma': 'auto', 'svm__kernel': 'linear'}
+3. 分數：0.9736 - {'svm__C': 0.1, 'svm__gamma': 0.01, 'svm__kernel': 'linear'}
+4. 分數：0.9736 - {'svm__C': 0.1, 'svm__gamma': 0.1, 'svm__kernel': 'linear'}
+5. 分數：0.9736 - {'svm__C': 1, 'svm__gamma': 'scale', 'svm__kernel': 'rbf'}
+(註：前 4 名皆為 linear 核心且分數相同，這是因為當使用 linear kernel 時，模型並不啟用 gamma 參數，故不同的 gamma 設定均產生完全一樣的線性模型結果。)
+
+=== 最佳模型的 Classification Report ===
+              precision    recall  f1-score   support
+
+           0       1.00      0.95      0.98        43
+           1       0.97      1.00      0.99        71
+
+    accuracy                           0.98       114
+   macro avg       0.99      0.98      0.98       114
+weighted avg       0.98      0.98      0.98       114
+

@@ -1,0 +1,52 @@
+姓名：林宥任
+學號：C113181108
+
+=== 完整程式碼 ===
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import cross_val_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.pipeline import Pipeline
+
+# 1. 載入資料與前處理
+df = pd.read_csv('data/Ship_Performance_Dataset.csv')
+df_clean = df.dropna(subset=['Maintenance_Status']).copy()
+
+# 建立二元目標：Critical = 1, 其他 = 0
+df_clean['is_critical'] = (df_clean['Maintenance_Status'] == 'Critical').astype(int)
+
+# 選取 6 個指定特徵
+features = ['Engine_Power_kW', 'Speed_Over_Ground_knots', 'Distance_Traveled_nm', 
+            'Draft_meters', 'Cargo_Weight_tons', 'Turnaround_Time_hours']
+X = df_clean[features]
+y = df_clean['is_critical']
+
+# 2. 定義模型字典 (完全依照提示結構)
+models = {
+    'LogisticRegression': LogisticRegression(max_iter=5000),
+    'KNN': KNeighborsClassifier(),
+    'SVM': SVC(),
+    'DecisionTree': DecisionTreeClassifier(random_state=42)
+}
+
+# 3. 使用 Pipeline 統一進行標準化與 5 折交叉驗證
+results = {}
+for name, model in models.items():
+    pipe = Pipeline([('scaler', StandardScaler()), ('clf', model)])
+    scores = cross_val_score(pipe, X, y, cv=5, scoring='accuracy')
+    results[name] = scores
+    print(f"{name}：{scores}  平均={scores.mean():.4f}  標準差={scores.std():.4f}")
+
+=== 交叉驗證結果 ===
+LogisticRegression：5 次分數=[0.9964, 0.9945, 1.0000, 0.9872, 0.9945]  平均=0.9945  標準差=0.0042
+KNN：5 次分數=[0.9416, 0.9342, 0.9415, 0.9287, 0.9159]  平均=0.9324  標準差=0.0096
+SVM：5 次分數=[0.9818, 0.9817, 0.9817, 0.9872, 0.9762]  平均=0.9817  標準差=0.0035
+DecisionTree：5 次分數=[0.8212, 0.8208, 0.8446, 0.7971, 0.8208]  平均=0.8209  標準差=0.0150
+
+=== 最佳模型 ===
+最佳模型：LogisticRegression
+平均準確率：0.9945
