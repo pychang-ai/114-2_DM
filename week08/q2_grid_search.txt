@@ -1,0 +1,62 @@
+姓名：謝佳芯
+學號：c111127
+
+=== 完整程式碼 ===
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_wine
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+
+wine = load_wine()
+X = wine.data
+y = wine.target
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+depths = [2, 3, 5, 7, 10, None]
+train_scores = []
+test_scores = []
+
+for d in depths:
+    dt = DecisionTreeClassifier(max_depth=d, random_state=42)
+    dt.fit(X_train, y_train)
+    train_scores.append(dt.score(X_train, y_train))
+    test_scores.append(dt.score(X_test, y_test))
+
+dt_final = DecisionTreeClassifier(max_depth=None, random_state=42)
+dt_final.fit(X_train, y_train)
+importances = dt_final.feature_importances_
+feat_imp = pd.Series(importances, index=wine.feature_names).sort_values(ascending=False)
+
+plt.figure(figsize=(20, 10))
+plot_tree(dt_final, feature_names=wine.feature_names, class_names=wine.target_names, filled=True, max_depth=3)
+plt.title("Decision Tree Visualization (max_depth=3)")
+plt.show()
+
+for i, d in enumerate(depths):
+    print(f"max_depth={d}: 訓練={train_scores[i]:.4f} 測試={test_scores[i]:.4f}")
+print("\n最佳 max_depth 與特徵重要性：")
+print(feat_imp.head(5))
+
+=== 不同 max_depth 的準確率比較 ===
+max_depth=2：訓練=0.9435  測試=0.8704
+max_depth=3：訓練=0.9919  測試=0.9630
+max_depth=5：訓練=1.0000  測試=0.9630
+max_depth=7：訓練=1.0000  測試=0.9630
+max_depth=10：訓練=1.0000  測試=0.9630
+max_depth=None：訓練=1.0000  測試=0.9630
+
+=== 最佳 max_depth ===
+最佳 max_depth：3 (在測試集達到最高準確率且模型相對簡單)
+測試集準確率：0.9630
+=== 特徵重要性前 5 名 ===
+1.flavanoids (類黃酮)
+2.color_intensity (顏色強度)
+3.proline (脯胺酸)
+4.ash (灰分)
+5.alcohol (酒精)
+
+=== 過擬合觀察 ===
+從準確率變化可以觀察到，當 max_depth 增加至 5 以上或不設限 (None) 時，訓練集的準確率達到了 1.0 (100%)，顯示模型已完全學習了訓練資料中的每一個細節。
+然而，測試集的準確率卻停留在 0.9630，並未隨著深度增加而進一步提升。這種「訓練集完美但測試集效能停滯」的現象即為 過擬合 (Overfitting) 的徵兆，代表過深的決策樹可能正在學習訓練資料中的雜訊，而非真正的規律。
